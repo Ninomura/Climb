@@ -4,19 +4,16 @@
 
 #include <tchar.h>
 
-
 #include"Direct3D.h"
 
 #include "Sprite.h"
 #include "Texture.h"
-
 #include "DirectInput.h"
 
 #include"ExternGV.h"
-#include"Player.h"
+#include"Object.h"
 
 #include <random>
-
 
 //ウィンドウプロシージャ
 LRESULT CALLBACK WndPrc
@@ -27,50 +24,14 @@ LRESULT CALLBACK WndPrc
 	LPARAM lParam
 )
 {
-	//メッセージ処理のための関数
-	//DispatchMessageによって呼び出される
-
-	//ウィンドウクラスの登録時に
-	//各ウィンドウに設定される
-
-	//アプリケーションがメッセージを
-	//取得したら呼び出される
-
-	//メッセージの例
-
-	//WM_DESTROY ウィンドウが破棄された
-	//			 ×ボタンが押された時など
-	//WM_MOVE    ウィンドウが移動
-	//WM_SIZE    ウィンドウサイズの変更
-	//等
-
-	//特別な処理を必要とする場合
-	//または自分で独自の処理を定義したい場合
-	//ここでメッセージの種類に応じた
-	//処理を行う
-
-	//取りあえず WM_DESTROYが来た時の
-	//終了処理のみ定義
-
 	switch (msg)
 	{
 	case WM_DESTROY:
 
 		PostQuitMessage(0);
 
-		//メッセージキューに
-		//新しくWM_QUITメッセージを送る
-
-		//いずれメッセージキューから
-		//取り出され
-		//メインループが終了する
-		//(メインループの終了条件を
-		//そのように作る)
 		break;
 	}
-
-	//独自の処理を行ったら
-	//デフォルトのウィンドウプロシージャを実行
 
 	return DefWindowProc(hWnd, msg, wParam, lParam);
 }
@@ -106,10 +67,6 @@ HRESULT RegistClassEx(HINSTANCE hInstance)
 	//それぞれがビット単位のフラグであるため
 	//オア演算で合成したものがスタイルの最終的な設定
 	wcex.style = CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS;
-
-	//CS_HREDRAW 横サイズが変わったときウィンドウ全体の再描画
-	//   VREDRAW 縦サイズが変わったときウィンドウ全体の再描画
-	//   DBLCLKS ダブルクリックが発生したことをウィンドウに通知
 
 	//WinMainのインスタンスハンドル
 	wcex.hInstance = hInstance;
@@ -278,13 +235,16 @@ int _stdcall WinMain
 	pDi->Init(hWnd);
 
 	Player player;
+	Object object;
 
 	//Player画像
 	Sprite spriteImgPlayer;
-	spriteImgPlayer.SetSize(player.sizeX, player.sizeY);
+	spriteImgPlayer.SetSize(player.getSizeX(), player.getSizeY());
+	Sprite spriteImgBlock;
+	spriteImgBlock.SetSize(object.getObjectSize(), object.getObjectSize());
 
 	Texture imgPlayer;
-	imgPlayer.Load(_T("Texture/Player.png"));
+	imgPlayer.Load(_T("Texture/cl_Player.png"));
 	imgPlayer.SetDivide(3, 1);
 
 	//初期を演算処理に設定
@@ -293,9 +253,6 @@ int _stdcall WinMain
 	MSG msg = {};
 
 	//メインプログラム-------------------------------------------------
-	//quitメッセージが出てくるまでループを繰り返す
-	//quitメッセージは上記のウィンドウプロシージャから送信
-	//送信の条件などはウィンドウプロシージャを確認
 	while (msg.message != WM_QUIT)
 	{
 
@@ -315,7 +272,6 @@ int _stdcall WinMain
 
 			switch (Mode)
 			{
-
 			//スタート画面
 			case Game_Mode::StartScreenProcessing:
 
@@ -336,7 +292,7 @@ int _stdcall WinMain
 				//移動処理
 				player.PlayerMove(pDi);
 				//重力処理
-				player.FallingProcess();
+				object.MapCreate(&player);
 				break;
 
 			//ゲーム終了
@@ -346,8 +302,8 @@ int _stdcall WinMain
 				{
 					Mode = GameStartProcessing;
 				}
-				break;
 
+				break;
 			}
 
 			//描画処理
