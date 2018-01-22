@@ -190,13 +190,18 @@ void Direct3D::SetRenderState(RENDERSTATE state)
 	case RENDER_ALPHABLEND:
 		//半透明描画
 
-		pDevice3D->SetRenderState(D3DRS_ALPHATESTENABLE, false);//αテスト無効
-		pDevice3D->SetRenderState(D3DRS_ALPHABLENDENABLE, true);//αブレンド有効
+		pDevice3D->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
+		pDevice3D->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
 
-																//ブレンド係数　今から描画するピクセル色に対するもの
 		pDevice3D->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-		//ブレンド係数	既にバックバッファに書かれているピクセル色に対するもの
 		pDevice3D->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+
+		pDevice3D->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
+		pDevice3D->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);
+		pDevice3D->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
+		pDevice3D->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
+		pDevice3D->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
+		pDevice3D->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
 
 		//最終的な描画色　＝　
 		//	SRC色×ブレンディング係数（SRC)　＋　DEST色×ブレンディング係数（DEST）

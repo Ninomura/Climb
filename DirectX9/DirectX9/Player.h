@@ -1,143 +1,191 @@
 #pragma once
-#include"ExternGV.h"
 #include"Object.h"
 #include "DirectInput.h"
 
-class Player:private Object
+class Player
 {
 private:
+	//プレイヤー座標（左上を起点）
+	//実数値
+	float x, y;
+	float posX,posY;
 	//所持ブロック数
 	int haveBlock;
 
-public:
-	//プレイヤー座標（左上を起点）
-	int x, y;
 	//サイズ
-	const int sizeX = 17;
-	const int sizeY = 21;
-
+	const float sizeX = 22.5f;
+	const float sizeY = 34.5f;
 	//移動距離
-	const float movingDistance = 2.0f;
+	const float movingDistance = 4.0f;
 	//ジャンプ力
-	const float jumpStartSpeed = -6.0f;
-
+	const float jumpStartSpeed = -8.5f;
 	//キャラの重力
-	const float charGravity = 0.25f;
+	const float charGravity = 0.48;
 	//落下速度
 	float jumpNowSpeed;
-	//ジャンプフラグ
-	bool flagJump;
+	//重力フラグフラグ（ジャンプフラグ）
+	bool gravityFlag;
+	//マウスフラグ
+	bool Mouseflag;
+public:
 
-	Player();
+	Player() {};
 	~Player();
 
 	//取得関数
-	float getX() { return x; };
-	float getY() { return y; };
+	float getPosX() { return posX = x;; };
+	float getPosY() { return posY; };
 	float getSizeX() { return sizeX; };
 	float getSizeY() { return sizeY; };
 	int getHaveBlock() { return haveBlock; };
 
 	//プレイヤー生成
-	void PlayerCreate() { y = WindowHeightSize / 2.0f; x = WindowWidthSize / 2.0f; };
-	//移動処理
-	void PlayerMove(DirectInput *pDi);
+	void PlayerCreate() 
+	{ 
+		y = 300.0f; x = WindowWidthSize / 2.0f + 100.0f;
+		posX = x; posY = y;
+	};
+	//行動処理
+	void PlayerMove(DirectInput *pDi, Texture *imgPlayer);
 	//ブロック作成
-	void BlockCreate();
+	void BlockCreate(Object *object);
 	//ブロック破壊
-	void BlockBreakDown();
-
-	//ジャンプ処理処理
-	void JumpProcessing() { float jumpSpeedPrev = jumpNowSpeed; };
-
-	void FallingProcessing();
+	void BlockBreakDown(DirectInput *pDi, Object*object);
+	//当たり判定（重力処理）
+	void FallingProcessing(Object *object);
 
 };
-
-Player::Player()
-{
-}
 
 Player::~Player()
 {
 	haveBlock = 0;
-	flagJump = false;
+	gravityFlag = false;
+	Mouseflag = false;
 	jumpNowSpeed = 0.0f;
 }
 
-
-void Player::PlayerMove(DirectInput *pDi)
+//行動処理
+void Player::PlayerMove(DirectInput *pDi, Texture *imgPlayer)
 {
+	//左右移動
 	if (pDi->KeyState(DIK_D))
 	{
 		x += movingDistance;
+		imgPlayer->SetNum(0, 0);
 	}
 	else if (pDi->KeyState(DIK_A))
 	{
 		x -= movingDistance;
+		imgPlayer->SetNum(1, 0);
+	}
+	else
+	{
+		imgPlayer->SetNum(2, 0);
 	}
 
-	if (pDi->KeyState(DIK_W) && flagJump == false)
+	//ジャンプ
+	if ((pDi->KeyJustPressed(DIK_W)
+		|| (pDi->KeyJustPressed(DIK_SPACE)))
+		&& gravityFlag == false)
 	{
-		flagJump = true;
+		gravityFlag = true;
 		jumpNowSpeed = jumpStartSpeed;
+	}
+
+	if (Mouseflag == false && pDi->MouseButton(0))
+	{
+
 	}
 }
 
 //ブロック作成
-void Player::BlockCreate()
+void Player::BlockCreate(Object *object)
 {
 
 }
 
 //ブロック破壊
-void Player::BlockBreakDown()
+void Player::BlockBreakDown(DirectInput *pDi, Object *object)
 {
-
+	//if (Mouseflag == false && pDi->MouseButton(0))
+	//{
+	//}
 }
 
-//判定処理（重力処理）
-void Player::FallingProcessing()
+//当たり判定（重力処理）
+void Player::FallingProcessing(Object *object)
 {
-	//フラグが立っている時処理を実行
-	if (flagJump == true) { JumpProcessing(); }
+	y = posY + (object->setPosY*object->objectSize);
 
 	//重力処理
-	jumpNowSpeed += charGravity;
-	//すり抜け防止
-	if (jumpNowSpeed > (float)objectSize) { jumpNowSpeed = objectSize - 1.0f; }
+	if (gravityFlag == true)
+	{
+		jumpNowSpeed += charGravity;
+		//すり抜け防止
+		if (jumpNowSpeed > object->objectSize) { jumpNowSpeed = object->objectSize - 1.0f; }
+		y += jumpNowSpeed;
+	}
 
-	//当たり判定
-	//足元と体で判定
-	if ((mapData[(int)((y + sizeY) % objectSize)][(int)(x % objectSize)] != 0
-		|| mapData[(int)((y + sizeY) % objectSize)][(int)((x + sizeX) % objectSize)] != 0)
-		&& jumpNowSpeed <= 0.0f
-		)
+	gravityFlag = true;
+
+	//マップ内のみ配列処理
+	if (posY >= 0.0f && posY <= (float)WindowHeightSize&&posX >= 0.0f && posX <= (float)WindowWidthSize)
 	{
-		y = (float)(y % objectSize * (float)objectSize - 0.1f);
-		//フラグリセット
-		flagJump = false;
-		jumpNowSpeed = 0.0f;
+		//当たり判定
+		//足元と体で判定
+		if ((object->mapData[(int)((y + sizeY) / object->objectSize)][(int)((x + movingDistance) / object->objectSize)] != 0
+			|| object->mapData[(int)((y + sizeY) / object->objectSize)][(int)((x + sizeX - movingDistance) / object->objectSize)] != 0)
+			&& jumpNowSpeed >= 0.0f
+			)
+		{
+			y = (float)((int)((y + sizeY) / object->objectSize)*object->objectSize - sizeY);
+			//フラグリセット
+			gravityFlag = false;
+			jumpNowSpeed = 0.0f;
+		}
+
+		//頭と体で判定
+		if ((object->mapData[(int)(y / object->objectSize)][(int)((x + movingDistance) / object->objectSize)] != 0
+			|| object->mapData[(int)(y / object->objectSize)][(int)((x + sizeX - movingDistance) / object->objectSize)] != 0)
+			&& jumpNowSpeed < 0.0f
+			)
+		{
+			y = (float)((int)(y / object->objectSize)*object->objectSize + sizeY);
+			jumpNowSpeed = 0.0f;
+		}
+		//体(右)で判定
+		if (object->mapData[(int)(y / object->objectSize)][(int)((x + sizeX + movingDistance) / object->objectSize)] != 0
+			|| object->mapData[(int)((y + sizeY - 1.0f) / object->objectSize)][(int)((x + sizeX + movingDistance) / object->objectSize)] != 0)
+		{
+			x = (float)((int)((x + sizeX + movingDistance) / object->objectSize)*object->objectSize - sizeX - 0.1f);
+		}
+		//体(左)で判定
+		else if (object->mapData[(int)(y / object->objectSize)][(int)((x - movingDistance) / object->objectSize)] != 0
+			|| object->mapData[(int)((y + sizeY - 1.0f) / object->objectSize)][(int)((x - movingDistance) / object->objectSize)] != 0)
+		{
+			x = (float)((int)(((x - movingDistance) / object->objectSize) + 1.0f)*object->objectSize);
+		}
 	}
-	//頭と体で判定
-	else if (mapData[(int)(y % objectSize)][(int)(x % objectSize)] != 0
-		|| mapData[(int)(y % objectSize)][(int)((x + sizeX) % objectSize)] != 0
-		)
+
+	posY = y - (object->setPosY*object->objectSize);
+
+	//上下スクロール
+	if (posY <= (9 * (object->objectSize))
+		&& gravityFlag == false)
 	{
-		y = (float)(y % objectSize * (float)objectSize + (float)objectSize + 0.1f);
+		if (object->setPosY > 0)
+		{
+			object->setPosY--;
+		}
 	}
-	//体(右)で判定
-	else if (mapData[(int)(y % objectSize)][(int)((x + sizeX) % objectSize)] != 0
-		|| mapData[(int)((y + sizeY) % objectSize)][(int)((x + sizeX) % objectSize)] != 0
-		)
+	else if (posY > 11 * (object->objectSize)
+		&& gravityFlag == false)
 	{
-		x = (float)(x % objectSize * (float)objectSize - 0.1f);
+		if (object->setPosY < object->mapSizeY - object->setMaxPosY)
+		{
+			object->setPosY++;
+		}
 	}
-	//体(左)で判定
-	else if (mapData[(int)(y % objectSize)][(int)(x % objectSize)] != 0
-		|| mapData[(int)((y + sizeY) % objectSize)][(int)(x % objectSize)] != 0
-		)
-	{
-		x = (float)(x % objectSize * (float)objectSize + (float)objectSize + 0.1f);
-	}
+
+	posY = y - (object->setPosY*object->objectSize);
 }

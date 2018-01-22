@@ -11,7 +11,7 @@
 #include "DirectInput.h"
 
 #include"ExternGV.h"
-#include"Object.h"
+#include"Player.h"
 
 #include <random>
 
@@ -237,15 +237,36 @@ int _stdcall WinMain
 	Player player;
 	Object object;
 
+	int frame = 0;
+
+	//背景画像
+	Sprite spriteImgBg;
+	spriteImgBg.SetSize(WindowWidthSize, WindowHeightSize);
+	spriteImgBg.SetPos(WindowWidthSize / 2, WindowHeightSize / 2);
 	//Player画像
 	Sprite spriteImgPlayer;
 	spriteImgPlayer.SetSize(player.getSizeX(), player.getSizeY());
-	Sprite spriteImgBlock;
-	spriteImgBlock.SetSize(object.getObjectSize(), object.getObjectSize());
+	//マップ画像
+	Sprite spriteImgObject[object.setMaxPosY][object.setMaxPosX];
+	//データ入力
+	for (int y = 0; y < object.setMaxPosY; y++)
+	{
+		for (int x = 0; x < object.setMaxPosX; x++)
+		{
+			spriteImgObject[y][x].SetSize(object.getObjectSize(), object.getObjectSize());
+		}
+	}
 
+	//テクスチャ設定
+	Texture imgBg;
+	imgBg.Load(_T("Texture/cl_Bg.png"));
 	Texture imgPlayer;
 	imgPlayer.Load(_T("Texture/cl_Player.png"));
-	imgPlayer.SetDivide(3, 1);
+	imgPlayer.SetDivide(4, 1);
+	imgPlayer.SetNum(2, 0);
+	Texture imgObject;
+	imgObject.Load(_T("Texture/cl_BaseBlock.png"));
+	imgObject.SetDivide(2, 1);
 
 	//初期を演算処理に設定
 	Game_Mode Mode = GameStartProcessing;
@@ -282,6 +303,9 @@ int _stdcall WinMain
 
 				player.~Player();
 
+				object.MapCreate();
+				player.PlayerCreate();
+
 				//プレイヤー操作（落下処理）に移動
 				Mode = PlayerProcessing;
 				break;
@@ -289,19 +313,18 @@ int _stdcall WinMain
 			//プレイヤー操作
 			case Game_Mode::PlayerProcessing:
 
-				//移動処理
-				player.PlayerMove(pDi);
-				//重力処理
-				object.MapCreate(&player);
+					//移動処理
+					player.PlayerMove(pDi,&imgPlayer);
+					//重力処理
+					object.FallingProcessing();
+					player.FallingProcessing(&object);
+
 				break;
 
 			//ゲーム終了
 			case Game_Mode::GameEndProcessing:
 
-				if (pDi->MouseButton(0))
-				{
-					Mode = GameStartProcessing;
-				}
+				if (pDi->MouseButton(0)) { Mode = GameStartProcessing; }
 
 				break;
 			}
@@ -311,9 +334,38 @@ int _stdcall WinMain
 			if (SUCCEEDED(d3d.BeginScene()))
 			{
 				d3d.ClearScreen();
-
-				spriteImgPlayer.SetPos(player.getX(), player.getY());
+				//背景
+				spriteImgBg.Draw(imgBg);
+				//プレイヤー
+				spriteImgPlayer.SetPos
+				(player.getPosX() + player.getSizeX() / 2.0f,
+					player.getPosY() + player.getSizeY() / 2.0f);
 				spriteImgPlayer.Draw(imgPlayer);
+
+				//マップ
+				for (int y = 0; y < object.setMaxPosY; y++)
+				{
+					for (int x = 0; x < object.setMaxPosX; x++)
+					{
+						spriteImgObject[y][x].SetPos
+						(x*object.getObjectSize() + object.getObjectSize() / 2,
+							y*object.getObjectSize() + object.getObjectSize() / 2);
+
+						switch (object.mapData[y + object.setPosY][x])
+						{
+						case 0:
+							break;
+						case 1:
+							imgObject.SetNum(0, 0);
+							spriteImgObject[y][x].Draw(imgObject);
+							break;
+						case 2:
+							imgObject.SetNum(1, 0);
+							spriteImgObject[y][x].Draw(imgObject);
+							break;
+						}
+					}
+				}
 
 				//描画終了の合図
 				d3d.EndScene();
