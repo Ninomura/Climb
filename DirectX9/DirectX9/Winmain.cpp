@@ -253,7 +253,7 @@ int _stdcall WinMain
 	{
 		for (int x = 0; x < object.setMaxPosX; x++)
 		{
-			spriteImgObject[y][x].SetSize(object.getObjectSize(), object.getObjectSize());
+			spriteImgObject[y][x].SetSize(object.objectSize, object.objectSize);
 		}
 	}
 
@@ -313,12 +313,11 @@ int _stdcall WinMain
 			//プレイヤー操作
 			case Game_Mode::PlayerProcessing:
 
-					//移動処理
-					player.PlayerMove(pDi,&imgPlayer);
-					//重力処理
-					object.FallingProcessing();
-					player.FallingProcessing(&object);
-
+				//移動処理
+				player.PlayerMove(pDi, &imgPlayer, &object);
+				//重力処理
+				object.FallingProcessing();
+				player.FallingProcessing(&object);
 				break;
 
 			//ゲーム終了
@@ -348,18 +347,18 @@ int _stdcall WinMain
 					for (int x = 0; x < object.setMaxPosX; x++)
 					{
 						spriteImgObject[y][x].SetPos
-						(x*object.getObjectSize() + object.getObjectSize() / 2,
-							y*object.getObjectSize() + object.getObjectSize() / 2);
+						(x*object.objectSize + object.objectSize / 2,
+							y*object.objectSize + object.objectSize / 2);
 
 						switch (object.mapData[y + object.setPosY][x])
 						{
-						case 0:
+						case object.null:
 							break;
-						case 1:
+						case object.standard:
 							imgObject.SetNum(0, 0);
 							spriteImgObject[y][x].Draw(imgObject);
 							break;
-						case 2:
+						case object.fixed:
 							imgObject.SetNum(1, 0);
 							spriteImgObject[y][x].Draw(imgObject);
 							break;

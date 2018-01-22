@@ -11,35 +11,34 @@ private:
 
 	//ブロックの重力
 	float objectGravity = 0.25f;
+	//変換用変数
+	int conversion;
+public:
+
+	//描画比率
+	static const int setMaxPosX = 30;
+	static const int setMaxPosY = 20;
+	//描画起点
+	int setPosX, setPosY;
+	//マップ比率
+	int mapSizeX, mapSizeY;
+	//ブロックのサイズ
+	const float objectSize = 32.0f;
 
 	//オブジェクト種類（未使用）
 	enum objectType
 	{
 		null,     //空
 		standard, //壊せるスタンダードなオブジェクト
+		fixed,    //固定オブジェクト
 		fall,     //落下しているオブジェクト
 	};
-public:
-
-	//マップ比率
-	int mapSizeX, mapSizeY;
-	//ブロックのサイズ
-	const float objectSize = 32.0f;
 	//マップデータ
-	vector< vector<int> > mapData;
-public:
-
-	int setPosX, setPosY;
-	static const int setMaxPosX = 30;
-	static const int setMaxPosY = 20;
+	vector< vector<objectType> > mapData;
 
 	Object();
 	~Object();
 
-	//取得関数
-	int getSetPosX() { return setPosX; }
-	int getSetPosY() { return setPosY; }
-	float getObjectSize() { return objectSize; }
 	//マップ生成
 	void MapCreate();
 	//判定処理（重力処理）
@@ -83,7 +82,24 @@ void Object::MapCreate()
 	{
 		for (int x = 0; x < mapSizeX; x++)
 		{
-			createMapData >> mapData[y][x];
+			//取得
+			createMapData >> conversion;
+			//変換
+			switch (conversion)
+			{
+			case 0:
+				mapData[y][x] = null;
+				break;
+			case 1:
+				mapData[y][x]= standard;
+				break;
+			case 2:
+				mapData[y][x]= fixed;
+				break;
+			case 3:
+				mapData[y][x] = fall;
+				break;
+			}
 		}
 	}
 
