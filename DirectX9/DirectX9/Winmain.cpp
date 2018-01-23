@@ -12,6 +12,7 @@
 
 #include"ExternGV.h"
 #include"Player.h"
+#include"Enemy.h"
 
 #include <random>
 
@@ -235,6 +236,7 @@ int _stdcall WinMain
 	pDi->Init(hWnd);
 
 	Player player;
+	Enemy enemy;
 	Object object;
 
 	int frame = 0;
@@ -246,6 +248,9 @@ int _stdcall WinMain
 	//Player画像
 	Sprite spriteImgPlayer;
 	spriteImgPlayer.SetSize(player.getSizeX(), player.getSizeY());
+	//エネミー画像
+	vector<Sprite>spriteImgEnemy;
+
 	//マップ画像
 	Sprite spriteImgObject[object.setMaxPosY][object.setMaxPosX];
 	//データ入力
@@ -264,6 +269,8 @@ int _stdcall WinMain
 	imgPlayer.Load(_T("Texture/cl_Player.png"));
 	imgPlayer.SetDivide(4, 1);
 	imgPlayer.SetNum(2, 0);
+	Texture imgEnemy;
+	imgEnemy.Load(_T("Texture/cl_enemy.png"));
 	Texture imgObject;
 	imgObject.Load(_T("Texture/cl_BaseBlock.png"));
 	imgObject.SetDivide(2, 1);
@@ -305,6 +312,13 @@ int _stdcall WinMain
 
 				object.MapCreate();
 				player.PlayerCreate();
+				enemy.CreateEnemy(&object);
+
+				spriteImgEnemy.resize(enemy.getEnemyNum());
+				for (int num = 0; num < enemy.getEnemyNum(); num++)
+				{
+					spriteImgEnemy[num].SetSize(enemy.getEnemySizeX(), enemy.getEnemySizeY());
+				}
 
 				//プレイヤー操作（落下処理）に移動
 				Mode = PlayerProcessing;
@@ -315,6 +329,7 @@ int _stdcall WinMain
 
 				//移動処理
 				player.PlayerMove(pDi, &imgPlayer, &object);
+				enemy.MoveEnemy(&object);
 				//重力処理
 				object.FallingProcessing();
 				player.FallingProcessing(&object);
@@ -340,6 +355,17 @@ int _stdcall WinMain
 				(player.getPosX() + player.getSizeX() / 2.0f,
 					player.getPosY() + player.getSizeY() / 2.0f);
 				spriteImgPlayer.Draw(imgPlayer);
+
+				for (int num = 0; num < enemy.getEnemyNum(); num++)
+				{
+					spriteImgEnemy[num].SetPos(enemy.enemyData[num].posX + enemy.getEnemySizeX() / 2.0f,
+						enemy.enemyData[num].posY + enemy.getEnemySizeY() / 2.0f);
+
+					if (enemy.enemyData[num].hp > 0)
+					{
+						spriteImgEnemy[num].Draw(imgEnemy);
+					}
+				}
 
 				//マップ
 				for (int y = 0; y < object.setMaxPosY; y++)

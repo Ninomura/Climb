@@ -31,7 +31,7 @@ public:
 		null,     //空
 		standard, //壊せるスタンダードなオブジェクト
 		fixed,    //固定オブジェクト
-		fall,     //落下しているオブジェクト
+		enemy,
 	};
 	//マップデータ
 	vector< vector<objectType> > mapData;
@@ -47,12 +47,11 @@ public:
 
 Object::Object()
 {
-
 }
 
 Object::~Object()
 {
-
+	mapData.~vector();
 }
 
 //マップ生成
@@ -97,7 +96,7 @@ void Object::MapCreate()
 				mapData[y][x]= fixed;
 				break;
 			case 3:
-				mapData[y][x] = fall;
+				mapData[y][x] = enemy;
 				break;
 			}
 		}
