@@ -269,8 +269,10 @@ int _stdcall WinMain
 	imgPlayer.Load(_T("Texture/cl_Player.png"));
 	imgPlayer.SetDivide(4, 1);
 	imgPlayer.SetNum(2, 0);
-	Texture imgEnemy;
-	imgEnemy.Load(_T("Texture/cl_enemy.png"));
+	Texture imgEnemy_eins;
+	imgEnemy_eins.Load(_T("Texture/cl_enemy_eins.png"));
+	Texture imgEnemy_zwei;
+	imgEnemy_zwei.Load(_T("Texture/cl_enemy_zwei.png"));
 	Texture imgObject;
 	imgObject.Load(_T("Texture/cl_BaseBlock.png"));
 	imgObject.SetDivide(2, 1);
@@ -317,7 +319,7 @@ int _stdcall WinMain
 				spriteImgEnemy.resize(enemy.getEnemyNum());
 				for (int num = 0; num < enemy.getEnemyNum(); num++)
 				{
-					spriteImgEnemy[num].SetSize(enemy.getEnemySizeX(), enemy.getEnemySizeY());
+					spriteImgEnemy[num].SetSize(enemy.enemyData[num].sizeX, enemy.enemyData[num].sizeY);
 				}
 
 				//プレイヤー操作（落下処理）に移動
@@ -327,12 +329,11 @@ int _stdcall WinMain
 			//プレイヤー操作
 			case Game_Mode::PlayerProcessing:
 
-				//移動処理
-				player.PlayerMove(pDi, &imgPlayer, &object);
 				enemy.MoveEnemy(&object);
+				//移動処理
+				player.PlayerMove(pDi, &imgPlayer, &object,&enemy);
 				//重力処理
 				object.FallingProcessing();
-				player.FallingProcessing(&object);
 				break;
 
 			//ゲーム終了
@@ -356,14 +357,26 @@ int _stdcall WinMain
 					player.getPosY() + player.getSizeY() / 2.0f);
 				spriteImgPlayer.Draw(imgPlayer);
 
+				//敵
 				for (int num = 0; num < enemy.getEnemyNum(); num++)
 				{
-					spriteImgEnemy[num].SetPos(enemy.enemyData[num].posX + enemy.getEnemySizeX() / 2.0f,
-						enemy.enemyData[num].posY + enemy.getEnemySizeY() / 2.0f);
+					spriteImgEnemy[num].SetPos(enemy.enemyData[num].posX + enemy.enemyData[num].sizeX / 2.0f,
+						enemy.enemyData[num].posY + enemy.enemyData[num].sizeY / 2.0f);
 
 					if (enemy.enemyData[num].hp > 0)
 					{
-						spriteImgEnemy[num].Draw(imgEnemy);
+						switch (enemy.enemyData[num].type)
+						{
+						case enemy.eins:
+							spriteImgEnemy[num].Draw(imgEnemy_eins);
+							break;
+						case enemy.zwei:
+							spriteImgEnemy[num].Draw(imgEnemy_zwei);
+							break;
+						case enemy.drei:
+							break;
+						}
+
 					}
 				}
 
@@ -376,9 +389,9 @@ int _stdcall WinMain
 						(x*object.objectSize + object.objectSize / 2,
 							y*object.objectSize + object.objectSize / 2);
 
-						switch (object.mapData[y + object.setPosY][x])
+						switch (object.mapData[y + object.setPosY][x].objectT)
 						{
-						case object.null:
+						case object.objectNull:
 							break;
 						case object.standard:
 							imgObject.SetNum(0, 0);

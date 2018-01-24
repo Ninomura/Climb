@@ -18,6 +18,7 @@ public:
 	//描画比率
 	static const int setMaxPosX = 30;
 	static const int setMaxPosY = 20;
+
 	//描画起点
 	int setPosX, setPosY;
 	//マップ比率
@@ -25,16 +26,32 @@ public:
 	//ブロックのサイズ
 	const float objectSize = 32.0f;
 
-	//オブジェクト種類（未使用）
+	//オブジェクト種類
 	enum objectType
 	{
-		null,     //空
+		objectNull,     //空
 		standard, //壊せるスタンダードなオブジェクト
 		fixed,    //固定オブジェクト
-		enemy,
 	};
+
+	//敵種類
+	enum enemyType
+	{
+		enemyNull,
+		eins,
+		zwei,
+		drei,
+	};
+
+	//マップ種類
+	typedef struct
+	{
+		objectType objectT;
+		enemyType enemyT;
+	}mapType;
+
 	//マップデータ
-	vector< vector<objectType> > mapData;
+	vector< vector<mapType> > mapData;
 
 	Object();
 	~Object();
@@ -71,7 +88,7 @@ void Object::MapCreate()
 
 	//動的にサイズを変更
 	mapData.resize(mapSizeY);
-	for (int i = 0; i<mapSizeY; i++)
+	for (int i = 0; i < mapSizeY; i++)
 	{
 		mapData[i].resize(mapSizeX);
 	}
@@ -83,20 +100,26 @@ void Object::MapCreate()
 		{
 			//取得
 			createMapData >> conversion;
+
+			mapData[y][x].objectT = objectNull;
+			mapData[y][x].enemyT = enemyNull;
 			//変換
 			switch (conversion)
 			{
-			case 0:
-				mapData[y][x] = null;
-				break;
 			case 1:
-				mapData[y][x]= standard;
+				mapData[y][x].objectT = standard;
 				break;
 			case 2:
-				mapData[y][x]= fixed;
+				mapData[y][x].objectT = fixed;
 				break;
 			case 3:
-				mapData[y][x] = enemy;
+				mapData[y][x].enemyT = eins;
+				break;
+			case 4:
+				mapData[y][x].enemyT = zwei;
+				break;
+			case 5:
+				mapData[y][x].enemyT = drei;
 				break;
 			}
 		}
