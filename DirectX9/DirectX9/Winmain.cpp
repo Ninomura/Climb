@@ -239,6 +239,7 @@ int _stdcall WinMain
 	Player player;
 	Enemy enemy;
 	Object object;
+	Animation titleAni;
 
 	bool modeFlag = false;
 
@@ -248,6 +249,9 @@ int _stdcall WinMain
 	Sprite spriteImgBg;
 	spriteImgBg.SetSize(WindowWidthSize, WindowHeightSize);
 	spriteImgBg.SetPos(WindowWidthSize / 2, WindowHeightSize / 2);
+	Sprite spriteImgTitleRogo;
+	spriteImgTitleRogo.SetSize(800, 256);
+	spriteImgTitleRogo.SetPos(WindowWidthSize / 2, WindowHeightSize / 3);
 	//Player画像
 	Sprite spriteImgPlayer;
 	spriteImgPlayer.SetSize(player.getSizeX(), player.getSizeY());
@@ -267,15 +271,14 @@ int _stdcall WinMain
 
 	//テクスチャ設定
 	Texture imgTitle;
-	imgTitle.Load(_T("Texture/cl_title.png"));
 	Texture imgTitleAni;
-	Animation titleAni;
+	Texture imgClear;
 	Texture imgBg;
-	imgBg.Load(_T("Texture/cl_Bg.png"));
 	Texture imgObject;
 	Texture imgPlayer;
 	Texture imgEnemy_eins;
 	Texture imgEnemy_zwei;
+	Texture imgEnemy_drei;
 
 	//初期を演算処理に設定
 	Game_Mode Mode = StartScreenProcessing;
@@ -299,7 +302,6 @@ int _stdcall WinMain
 		else
 		{
 			pDi->Update();//キー状態の更新
-
 			switch (Mode)
 			{
 				//スタート画面
@@ -307,14 +309,17 @@ int _stdcall WinMain
 
 				if (modeFlag == false)
 				{
+					imgTitle.Load(_T("Texture/cl_title.png"));
+
 					imgTitleAni.Load(_T("Texture/cl_titleAni.png"));
 					imgTitleAni.SetDivide(10, 1);
 					modeFlag = true;
 				}
 
-				if (pDi->MouseButtonJustPressed(0))
+				if (pDi->KeyJustPressed(DIK_RETURN))
 				{
 					Mode = GameStartProcessing;
+					imgTitle.Release();
 					imgTitleAni.Release();
 					modeFlag = false;
 				}
@@ -325,6 +330,7 @@ int _stdcall WinMain
 
 				if (modeFlag == false)
 				{
+					imgBg.Load(_T("Texture/cl_Bg.png"));
 					imgObject.Load(_T("Texture/cl_BaseBlock.png"));
 					imgObject.SetDivide(2, 1);
 
@@ -334,6 +340,7 @@ int _stdcall WinMain
 
 					imgEnemy_eins.Load(_T("Texture/cl_enemy_eins.png"));
 					imgEnemy_zwei.Load(_T("Texture/cl_enemy_zwei.png"));
+					imgEnemy_drei.Load(_T("Texture/cl_enemy_drei.png"));
 
 					modeFlag = true;
 				}
@@ -350,7 +357,7 @@ int _stdcall WinMain
 					spriteImgEnemy[num].SetSize(enemy.enemyData[num].sizeX, enemy.enemyData[num].sizeY);
 				}
 
-				//プレイヤー操作（落下処理）に移動
+				//プレイヤー操作に移動
 				Mode = PlayerProcessing;
 				break;
 
@@ -362,12 +369,37 @@ int _stdcall WinMain
 				player.PlayerMove(pDi, &imgPlayer, &object,&enemy);
 				//重力処理
 				object.FallingProcessing();
+
+				if (player.getGoalFlag() == true)
+				{
+					imgClear.Load(_T("Texture/cl_clear.png"));
+					imgBg.Release();
+					imgObject.Release();
+
+					imgPlayer.Release();
+
+					imgEnemy_eins.Release();
+					imgEnemy_zwei.Release();
+					imgEnemy_drei.Release();
+
+					vector<Sprite>().swap(spriteImgEnemy);
+
+					enemy.~Enemy();
+					object.~Object();
+					player.~Player();
+					modeFlag = false;
+					Mode = GameEndProcessing;
+				}
 				break;
 
 			//ゲーム終了
 			case Game_Mode::GameEndProcessing:
 
-				if (pDi->MouseButton(0)) { Mode = GameStartProcessing; }
+				if (pDi->KeyJustPressed(DIK_RETURN)) 
+				{
+					imgClear.Release();
+					Mode = StartScreenProcessing;
+				}
 
 				break;
 			}
@@ -377,18 +409,17 @@ int _stdcall WinMain
 			if (SUCCEEDED(d3d.BeginScene()))
 			{
 				d3d.ClearScreen();
-
-				//背景
-				spriteImgBg.Draw(imgBg);
 				switch (Mode)
 				{
 				case StartScreenProcessing:
-					titleAni.processing(7, 10);
+					titleAni.processing(10, 10);
 					imgTitleAni.SetNum(titleAni.getNum(), 0);
 					spriteImgBg.Draw(imgTitleAni);
-					spriteImgBg.Draw(imgTitle);
+					spriteImgTitleRogo.Draw(imgTitle);
 					break;
 				case PlayerProcessing:
+					//背景
+					spriteImgBg.Draw(imgBg);
 					//プレイヤー
 					spriteImgPlayer.SetPos
 					(player.getPosX() + player.getSizeX() / 2.0f,
@@ -412,6 +443,7 @@ int _stdcall WinMain
 								spriteImgEnemy[num].Draw(imgEnemy_zwei);
 								break;
 							case enemy.drei:
+								spriteImgEnemy[num].Draw(imgEnemy_drei);
 								break;
 							}
 
@@ -442,6 +474,9 @@ int _stdcall WinMain
 							}
 						}
 					}
+					break;
+				case GameEndProcessing:
+					spriteImgBg.Draw(imgClear);
 					break;
 				}
 

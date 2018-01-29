@@ -19,11 +19,12 @@ private:
 	//移動距離
 	const float movingDistance = 4.0f;
 	//ジャンプ力
-	const float jumpStartSpeed = -8.9f;
+	const float jumpStartSpeed = -9.0f;
 	//キャラの重力
-	const float charGravity = 0.48;
+	const float charGravity = 0.5;
 	//落下速度
 	float jumpNowSpeed;
+	bool goalFlag;
 	//重力フラグフラグ（ジャンプフラグ）
 	bool gravityFlag;
 	//マウスフラグ
@@ -40,6 +41,7 @@ public:
 	float getPosY() { return posY; };
 	float getSizeX() { return sizeX; };
 	float getSizeY() { return sizeY; };
+	bool getGoalFlag() { return goalFlag; };
 	int getHaveBlock() { return haveBlock; };
 
 	//プレイヤー生成
@@ -60,6 +62,7 @@ public:
 Player::~Player()
 {
 	haveBlock = 0;
+	goalFlag = false;
 	gravityFlag = false;
 	Mouseflag = false;
 	jumpNowSpeed = 0.0f;
@@ -69,12 +72,14 @@ Player::~Player()
 void Player::PlayerMove(DirectInput *pDi, Texture *imgPlayer, Object *pObject, Enemy *pEnemy)
 {
 	//左右移動
-	if (pDi->KeyState(DIK_D))
+	if (pDi->KeyState(DIK_D)
+		|| pDi->KeyState(DIK_RIGHT))
 	{
 		x += movingDistance;
 		imgPlayer->SetNum(0, 0);
 	}
-	else if (pDi->KeyState(DIK_A))
+	else if (pDi->KeyState(DIK_A)
+		|| pDi->KeyState(DIK_LEFT))
 	{
 		x -= movingDistance;
 		imgPlayer->SetNum(1, 0);
@@ -86,7 +91,7 @@ void Player::PlayerMove(DirectInput *pDi, Texture *imgPlayer, Object *pObject, E
 
 	//ジャンプ
 	if ((pDi->KeyJustPressed(DIK_W)
-		|| (pDi->KeyJustPressed(DIK_SPACE)))
+		|| (pDi->KeyJustPressed(DIK_UP)))
 		&& gravityFlag == false)
 	{
 		gravityFlag = !gravityFlag;
@@ -155,10 +160,23 @@ void Player::FallingProcessing(Object *pObject, Enemy *pEnemy)
 	//マップ内のみ配列処理
 	if ((posY >= 0.0f && posY + sizeY < (float)WindowHeightSize - jumpNowSpeed) && (posX >= 0.0f && posX < (float)WindowWidthSize))
 	{
+		//体(右)で判定
+		if (pObject->mapData[(int)(y / objectSize)][(int)((x + sizeX) / objectSize)].objectT == goal
+			|| pObject->mapData[(int)((y + sizeY - 0.1f) / objectSize)][(int)((x + sizeX) / objectSize)].objectT == goal)
+		{
+			goalFlag = !goalFlag;
+		}
+		//体(左)で判定
+		else if (pObject->mapData[(int)(y / objectSize)][(int)((x) / objectSize)].objectT == goal
+			|| pObject->mapData[(int)((y + sizeY - 0.1f) / objectSize)][(int)((x) / objectSize)].objectT == goal)
+		{
+			goalFlag = !goalFlag;
+		}
+
 		//当たり判定
 		//足元と体で判定
-		if ((pObject->mapData[(int)((y + sizeY) / objectSize)][(int)((x + movingDistance) / objectSize)].objectT != objectNull
-			|| pObject->mapData[(int)((y + sizeY) / objectSize)][(int)((x + sizeX - movingDistance) / objectSize)].objectT != objectNull)
+		if ((pObject->mapData[(int)((y + sizeY) / objectSize)][(int)((x + movingDistance + pEnemy->movingDistance) / objectSize)].objectT != objectNull
+			|| pObject->mapData[(int)((y + sizeY) / objectSize)][(int)((x + sizeX - movingDistance - pEnemy->movingDistance) / objectSize)].objectT != objectNull)
 			&& jumpNowSpeed >= 0.0f
 			)
 		{
@@ -169,8 +187,8 @@ void Player::FallingProcessing(Object *pObject, Enemy *pEnemy)
 		}
 
 		//頭と体で判定
-		if ((pObject->mapData[(int)(y / objectSize)][(int)((x + movingDistance) / objectSize)].objectT != objectNull
-			|| pObject->mapData[(int)(y / objectSize)][(int)((x + sizeX - movingDistance) / objectSize)].objectT != objectNull)
+		if ((pObject->mapData[(int)(y / objectSize)][(int)((x + movingDistance + pEnemy->movingDistance) / objectSize)].objectT != objectNull
+			|| pObject->mapData[(int)(y / objectSize)][(int)((x + sizeX - movingDistance - pEnemy->movingDistance) / objectSize)].objectT != objectNull)
 			&& jumpNowSpeed < 0.0f
 			)
 		{
@@ -179,13 +197,13 @@ void Player::FallingProcessing(Object *pObject, Enemy *pEnemy)
 		}
 		//体(右)で判定
 		if (pObject->mapData[(int)(y / objectSize)][(int)((x + sizeX) / objectSize)].objectT != objectNull
-			|| pObject->mapData[(int)((y + sizeY - 1.0f) / objectSize)][(int)((x + sizeX) / objectSize)].objectT != objectNull)
+			|| pObject->mapData[(int)((y + sizeY - 0.1f) / objectSize)][(int)((x + sizeX) / objectSize)].objectT != objectNull)
 		{
 			x = (float)((int)((x + sizeX + movingDistance) / objectSize)*objectSize - sizeX - 0.1f);
 		}
 		//体(左)で判定
 		else if (pObject->mapData[(int)(y / objectSize)][(int)((x) / objectSize)].objectT != objectNull
-			|| pObject->mapData[(int)((y + sizeY - 1.0f) / objectSize)][(int)((x) / objectSize)].objectT != objectNull)
+			|| pObject->mapData[(int)((y + sizeY - 0.1f) / objectSize)][(int)((x) / objectSize)].objectT != objectNull)
 		{
 			x = (float)((int)(((x - movingDistance) / objectSize) + 1.0f)*objectSize);
 		}
@@ -194,43 +212,45 @@ void Player::FallingProcessing(Object *pObject, Enemy *pEnemy)
 		for (int num = 0; num < pEnemy->getEnemyNum(); num++)
 		{
 			//足元と体で判定
-			if (((y + sizeY >= pEnemy->enemyData[num].y
-				&&y + sizeY <= pEnemy->enemyData[num].y + pEnemy->enemyData[num].sizeY)
-				&& (x + movingDistance < pEnemy->enemyData[num].x + pEnemy->enemyData[num].sizeX
-					&& x + sizeX - movingDistance> pEnemy->enemyData[num].x))
-				&& jumpNowSpeed >= 0.0f
-				)
+			for (float processY = y + sizeY - jumpNowSpeed; processY < y + sizeY; processY += 0.1)
 			{
-				y = (float)(pEnemy->enemyData[num].y - sizeY);
-
-				if (pEnemy->enemyData[num].returnFlag == false)
+				if ((((processY >= pEnemy->enemyData[num].y
+					&&processY <= pEnemy->enemyData[num].y + 1.0f)
+					|| (y + sizeY >= pEnemy->enemyData[num].y
+						&&y + sizeY <= pEnemy->enemyData[num].y + 1.0f))
+					&& (x + movingDistance < pEnemy->enemyData[num].x + pEnemy->enemyData[num].sizeX
+						&& x + sizeX - movingDistance> pEnemy->enemyData[num].x))
+					&& jumpNowSpeed >= 0.0f
+					)
 				{
-					x += pEnemy->movingDistance;
-				}
-				else
-				{
-					x -= pEnemy->movingDistance;
-				}
+					y = (float)(pEnemy->enemyData[num].y - sizeY);
 
-				//フラグリセット
-				gravityFlag = !gravityFlag;
-				jumpNowSpeed = 0.0f;
+					//フラグリセット
+					if (gravityFlag != false)
+					{
+						gravityFlag = !gravityFlag;
+					}
+					jumpNowSpeed = 0.0f;
+					break;
+				}
 			}
 
 			//体(右)で判定
 			if ((x + sizeX >= pEnemy->enemyData[num].x
 				&&x + sizeX <= pEnemy->enemyData[num].x + pEnemy->enemyData[num].sizeX / 2.0f)
-				&& ((y > pEnemy->enemyData[num].y && y <= pEnemy->enemyData[num].y + pEnemy->enemyData[num].sizeY)
-					|| (y + sizeY > pEnemy->enemyData[num].y&& y + sizeY <= pEnemy->enemyData[num].y + pEnemy->enemyData[num].sizeY)))
+				&& ((y >= pEnemy->enemyData[num].y && y <= pEnemy->enemyData[num].y + pEnemy->enemyData[num].sizeY)
+					|| (y + sizeY - 1.0f >= pEnemy->enemyData[num].y&& y + sizeY - 1.0f <= pEnemy->enemyData[num].y + pEnemy->enemyData[num].sizeY)))
 			{
 				x = (float)(pEnemy->enemyData[num].x - sizeX - pEnemy->movingDistance);
 
 				//敵と壁に挟まれた時
-				if (pObject->mapData[(int)(y / objectSize)][(int)((x) / objectSize)].objectT != objectNull
-					|| pObject->mapData[(int)((y + sizeY - 1.0f) / objectSize)][(int)((x) / objectSize)].objectT != objectNull)
+				if ((pObject->mapData[(int)(y / objectSize)][(int)(x / objectSize)].objectT != objectNull
+					|| pObject->mapData[(int)((y + sizeY - 1.0f) / objectSize)][(int)(x / objectSize)].objectT != objectNull)
+					&& pEnemy->enemyData[num].returnFlag == true)
 				{
 					x = (float)((int)(((x - movingDistance) / objectSize) + 1.0f)*objectSize);
 					pEnemy->enemyData[num].returnFlag = !pEnemy->enemyData[num].returnFlag;
+
 				}
 				//敵と敵に挟まれた時
 				for (int num2 = 0; num2 < pEnemy->getEnemyNum(); num2++)
@@ -239,28 +259,47 @@ void Player::FallingProcessing(Object *pObject, Enemy *pEnemy)
 					{
 						if ((x <= pEnemy->enemyData[num2].x + pEnemy->enemyData[num2].sizeX
 							&&x >= pEnemy->enemyData[num2].x + pEnemy->enemyData[num2].sizeX / 2.0f)
-							&& ((y > pEnemy->enemyData[num2].y&& y <= pEnemy->enemyData[num2].y + pEnemy->enemyData[num2].sizeY)
-								|| (y + sizeY > pEnemy->enemyData[num2].y&& y + sizeY <= pEnemy->enemyData[num2].y + pEnemy->enemyData[num2].sizeY)))
+							&& ((y >= pEnemy->enemyData[num2].y&& y <= pEnemy->enemyData[num2].y + pEnemy->enemyData[num2].sizeY)
+								|| (y + sizeY - 1.0f >= pEnemy->enemyData[num2].y&& y + sizeY - 1.0f <= pEnemy->enemyData[num2].y + pEnemy->enemyData[num2].sizeY)))
 						{
 							pEnemy->enemyData[num].returnFlag = !pEnemy->enemyData[num].returnFlag;
 							pEnemy->enemyData[num2].returnFlag = !pEnemy->enemyData[num2].returnFlag;
+
+							if (pEnemy->enemyData[num].returnFlag == false)
+							{
+								pEnemy->enemyData[num].x += pEnemy->movingDistance;
+							}
+							else
+							{
+								pEnemy->enemyData[num].x -= pEnemy->movingDistance;
+							}
+
+							if (pEnemy->enemyData[num2].returnFlag == false)
+							{
+								pEnemy->enemyData[num2].x += pEnemy->movingDistance;
+							}
+							else
+							{
+								pEnemy->enemyData[num2].x -= pEnemy->movingDistance;
+							}
+
 							break;
 						}
 					}
 				}
-				break;
 			}
 			//体(左)で判定
 			else if ((x <= pEnemy->enemyData[num].x + pEnemy->enemyData[num].sizeX
 				&&x >= pEnemy->enemyData[num].x + pEnemy->enemyData[num].sizeX / 2.0f)
-				&& ((y > pEnemy->enemyData[num].y&& y <= pEnemy->enemyData[num].y + pEnemy->enemyData[num].sizeY)
-					|| (y + sizeY > pEnemy->enemyData[num].y&& y + sizeY <= pEnemy->enemyData[num].y + pEnemy->enemyData[num].sizeY)))
+				&& ((y >= pEnemy->enemyData[num].y&& y <= pEnemy->enemyData[num].y + pEnemy->enemyData[num].sizeY)
+					|| (y + sizeY - 1.0f >= pEnemy->enemyData[num].y&& y + sizeY - 1.0f <= pEnemy->enemyData[num].y + pEnemy->enemyData[num].sizeY)))
 			{
 				x = (float)(pEnemy->enemyData[num].x + pEnemy->enemyData[num].sizeX + pEnemy->movingDistance);
 
 				//体(右)で判定
-				if (pObject->mapData[(int)(y / objectSize)][(int)((x + sizeX) / objectSize)].objectT != objectNull
+				if ((pObject->mapData[(int)(y / objectSize)][(int)((x + sizeX) / objectSize)].objectT != objectNull
 					|| pObject->mapData[(int)((y + sizeY - 1.0f) / objectSize)][(int)((x + sizeX) / objectSize)].objectT != objectNull)
+					&& pEnemy->enemyData[num].returnFlag == false)
 				{
 					x = (float)((int)((x + sizeX + movingDistance) / objectSize)*objectSize - sizeX - 0.1f);
 					pEnemy->enemyData[num].returnFlag = !pEnemy->enemyData[num].returnFlag;
@@ -272,17 +311,79 @@ void Player::FallingProcessing(Object *pObject, Enemy *pEnemy)
 					{
 						if ((x + sizeX >= pEnemy->enemyData[num2].x
 							&&x + sizeX <= pEnemy->enemyData[num2].x + pEnemy->enemyData[num2].sizeX / 2.0f)
-							&& ((y > pEnemy->enemyData[num2].y&& y <= pEnemy->enemyData[num2].y + pEnemy->enemyData[num2].sizeY)
-								|| (y + sizeY > pEnemy->enemyData[num2].y&& y + sizeY <= pEnemy->enemyData[num2].y + pEnemy->enemyData[num2].sizeY)))
+							&& ((y >= pEnemy->enemyData[num2].y&& y <= pEnemy->enemyData[num2].y + pEnemy->enemyData[num2].sizeY)
+								|| (y + sizeY - 1.0f >= pEnemy->enemyData[num2].y&& y + sizeY - 1.0f <= pEnemy->enemyData[num2].y + pEnemy->enemyData[num2].sizeY)))
 						{
 							pEnemy->enemyData[num].returnFlag = !pEnemy->enemyData[num].returnFlag;
 							pEnemy->enemyData[num2].returnFlag = !pEnemy->enemyData[num2].returnFlag;
+
+							if (pEnemy->enemyData[num].returnFlag == false)
+							{
+								pEnemy->enemyData[num].x += pEnemy->movingDistance;
+							}
+							else
+							{
+								pEnemy->enemyData[num].x -= pEnemy->movingDistance;
+							}
+
+							if (pEnemy->enemyData[num2].returnFlag == false)
+							{
+								pEnemy->enemyData[num2].x += pEnemy->movingDistance;
+							}
+							else
+							{
+								pEnemy->enemyData[num2].x -= pEnemy->movingDistance;
+							}
+
 							break;
 						}
 					}
 				}
-				break;
 			}
+
+			for (float processY = y + sizeY - jumpNowSpeed; processY <= y + sizeY; processY += 0.1)
+			{
+				if ((((processY >= pEnemy->enemyData[num].y && processY <= pEnemy->enemyData[num].y + 1.0f)
+					|| (y + sizeY >= pEnemy->enemyData[num].y && y + sizeY <= pEnemy->enemyData[num].y + 1.0f))
+					&& (x + movingDistance < pEnemy->enemyData[num].x + pEnemy->enemyData[num].sizeX
+						&& x + sizeX - movingDistance> pEnemy->enemyData[num].x))
+					&& jumpNowSpeed >= 0.0f
+					)
+				{
+					y = (float)(pEnemy->enemyData[num].y - sizeY);
+
+					//フラグリセット
+					if (gravityFlag != false)
+					{
+						gravityFlag = !gravityFlag;
+					}
+					jumpNowSpeed = 0.0f;
+					break;
+				}
+			}
+
+			if (((y + sizeY >= pEnemy->enemyData[num].y
+				&&y + sizeY <= pEnemy->enemyData[num].y + pEnemy->enemyData[num].sizeY)
+				&& (x + movingDistance < pEnemy->enemyData[num].x + pEnemy->enemyData[num].sizeX
+					&& x + sizeX - movingDistance> pEnemy->enemyData[num].x))
+				&& jumpNowSpeed >= 0.0f)
+			{
+				if (pEnemy->enemyData[num].returnFlag == false) { x += pEnemy->movingDistance; }
+				else { x -= pEnemy->movingDistance; }
+			}
+		}
+
+		//体(右)で判定
+		if (pObject->mapData[(int)(y / objectSize)][(int)((x + sizeX) / objectSize)].objectT != objectNull
+			|| pObject->mapData[(int)((y + sizeY - 0.1f) / objectSize)][(int)((x + sizeX) / objectSize)].objectT != objectNull)
+		{
+			x = (float)((int)((x + sizeX + movingDistance) / objectSize)*objectSize - sizeX - 0.1f);
+		}
+		//体(左)で判定
+		else if (pObject->mapData[(int)(y / objectSize)][(int)((x) / objectSize)].objectT != objectNull
+			|| pObject->mapData[(int)((y + sizeY - 0.1f) / objectSize)][(int)((x) / objectSize)].objectT != objectNull)
+		{
+			x = (float)((int)(((x - movingDistance) / objectSize) + 1.0f)*objectSize);
 		}
 
 		posY = y - (pObject->setPosY*objectSize);
@@ -291,18 +392,11 @@ void Player::FallingProcessing(Object *pObject, Enemy *pEnemy)
 		if (posY <= (9 * (objectSize))
 			&& jumpNowSpeed <= 0)
 		{
-			if (pObject->setPosY > 0)
-			{
-				pObject->setPosY--;
-			}
+			if (pObject->setPosY > 0) { pObject->setPosY--; }
 		}
-		else if (posY > 11 * (objectSize)
-			&& jumpNowSpeed > 0)
+		else if (posY > 11 * (objectSize) && jumpNowSpeed > 0)
 		{
-			if (pObject->setPosY < pObject->mapSizeY - pObject->setMaxPosY)
-			{
-				pObject->setPosY++;
-			}
+			if (pObject->setPosY < pObject->mapSizeY - pObject->setMaxPosY) { pObject->setPosY++; }
 		}
 		posY = y - (pObject->setPosY*objectSize);
 	}

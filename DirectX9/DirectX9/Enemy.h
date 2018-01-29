@@ -7,8 +7,8 @@ private:
 	//“G”
 	int enemyNum;
 
-	float enemySizeX[3]{ 40.0f ,40.0f,0.0f };
-	float enemySizeY[3]{ 38.0f ,76.0f,0.0f };
+	float enemySizeX[3]{ 40.0f ,40.0f,40.0f };
+	float enemySizeY[3]{ 38.0f ,76.0f,114.0f };
 
 	//ƒLƒƒƒ‰‚Ìd—Í
 	const float enemyGravity = 0.48f;
@@ -21,7 +21,7 @@ private:
 public:
 
 	//ˆÚ“®‹——£
-	const float movingDistance = 1.5f;
+	const float movingDistance = 2.5f;
 
 	typedef struct
 	{
@@ -52,7 +52,8 @@ Enemy::Enemy()
 
 Enemy::~Enemy()
 {
-	enemyData.~vector();
+	enemyNum = 0;
+	vector<EnemyData>().swap(enemyData);
 }
 
 void Enemy::CreateEnemy(Object *object)
@@ -67,8 +68,8 @@ void Enemy::CreateEnemy(Object *object)
 	}
 	
 	enemyData.resize(enemyNum);
-	int num = 0;
 
+	int num = 0;
 	for (int y = 0; y < object->mapSizeY; y++)
 	{
 		for (int x = 0; x < object->mapSizeX; x++)
@@ -147,8 +148,8 @@ void Enemy::FallingProcessing(Object *pObject, int num)
 
 	//“–‚½‚è”»’è
 	//‘«Œ³‚Æ‘Ì‚Å”»’è
-	if ((pObject->mapData[(int)((enemyData[num].y + enemyData[num].sizeY) / objectSize)][(int)((enemyData[num].x + movingDistance) / objectSize)].objectT != objectNull
-		|| pObject->mapData[(int)((enemyData[num].y + enemyData[num].sizeY) / objectSize)][(int)((enemyData[num].x + enemyData[num].sizeX - movingDistance) / objectSize)].objectT != objectNull)
+	if (((pObject->mapData[(int)((enemyData[num].y + enemyData[num].sizeY) / objectSize)][(int)((enemyData[num].x + movingDistance) / objectSize)].objectT != objectNull
+		&& pObject->mapData[(int)((enemyData[num].y + enemyData[num].sizeY) / objectSize)][(int)((enemyData[num].x + enemyData[num].sizeX - movingDistance) / objectSize)].objectT != objectNull))
 		&& jumpNowSpeed >= 0.0f
 		)
 	{
@@ -164,13 +165,13 @@ void Enemy::FallingProcessing(Object *pObject, int num)
 		//‘«Œ³‚ª–³‚¯‚ê‚Îˆø‚«•Ô‚·ˆ—
 		if (enemyData[num].returnFlag == false)
 		{
-			enemyData[num].returnFlag = true;
-			enemyData[num].x -= movingDistance;
+			enemyData[num].returnFlag = !enemyData[num].returnFlag;
+			enemyData[num].x -= movingDistance*2;
 		}
 		else
 		{
-			enemyData[num].returnFlag = false;
-			enemyData[num].x += movingDistance;
+			enemyData[num].returnFlag = !enemyData[num].returnFlag;
+			enemyData[num].x += movingDistance*2;
 		}
 	}
 
@@ -188,14 +189,14 @@ void Enemy::FallingProcessing(Object *pObject, int num)
 	if (pObject->mapData[(int)(enemyData[num].y / objectSize)][(int)((enemyData[num].x + enemyData[num].sizeX) / objectSize)].objectT != objectNull
 		|| pObject->mapData[(int)((enemyData[num].y + enemyData[num].sizeY - 1.0f) / objectSize)][(int)((enemyData[num].x + enemyData[num].sizeX) / objectSize)].objectT != objectNull)
 	{
-		enemyData[num].x = (float)((int)((enemyData[num].x + enemyData[num].sizeX + movingDistance) / objectSize)*objectSize - enemyData[num].sizeX - movingDistance);
+		enemyData[num].x = (float)((int)((enemyData[num].x + enemyData[num].sizeX + movingDistance) / objectSize)*objectSize - enemyData[num].sizeX - movingDistance*2);
 		enemyData[num].returnFlag = !enemyData[num].returnFlag;
 	}
 	//‘Ì(¶)‚Å”»’è
 	else if (pObject->mapData[(int)(enemyData[num].y / objectSize)][(int)((enemyData[num].x) / objectSize)].objectT != objectNull
 		|| pObject->mapData[(int)((enemyData[num].y + enemyData[num].sizeY - 1.0f) / objectSize)][(int)((enemyData[num].x) / objectSize)].objectT != objectNull)
 	{
-		enemyData[num].x = (float)((int)(((enemyData[num].x - movingDistance) / objectSize) + 1.0f)*objectSize);
+		enemyData[num].x = (float)((int)(((enemyData[num].x - movingDistance*2) / objectSize) + 1.0f)*objectSize);
 		enemyData[num].returnFlag = !enemyData[num].returnFlag;
 	}
 
@@ -208,7 +209,7 @@ void Enemy::FallingProcessing(Object *pObject, int num)
 		{
 			enemyData[num].x = (float)(enemyData[num2].x - enemyData[num].sizeX - movingDistance);
 			enemyData[num].returnFlag = !enemyData[num].returnFlag;
-			enemyData[num2].returnFlag = !enemyData[num].returnFlag;
+			enemyData[num2].returnFlag = !enemyData[num2].returnFlag;
 			//‘Ì(¶)‚Å”»’è
 			if (pObject->mapData[(int)(enemyData[num].y / objectSize)][(int)((enemyData[num].x) / objectSize)].objectT != objectNull
 				|| pObject->mapData[(int)((enemyData[num].y + enemyData[num].sizeY - 1.0f) / objectSize)][(int)((enemyData[num].x) / objectSize)].objectT != objectNull)
@@ -226,7 +227,7 @@ void Enemy::FallingProcessing(Object *pObject, int num)
 		{
 			enemyData[num].x = (float)(enemyData[num2].x + enemyData[num2].sizeX + movingDistance);
 			enemyData[num].returnFlag = !enemyData[num].returnFlag;
-			enemyData[num2].returnFlag = !enemyData[num].returnFlag;
+			enemyData[num2].returnFlag = !enemyData[num2].returnFlag;
 			//‘Ì(‰E)‚Å”»’è
 			if (pObject->mapData[(int)(enemyData[num].y / objectSize)][(int)((enemyData[num].x + enemyData[num].sizeX) / objectSize)].objectT != objectNull
 				|| pObject->mapData[(int)((enemyData[num].y + enemyData[num].sizeY - 1.0f) / objectSize)][(int)((enemyData[num].x + enemyData[num].sizeX) / objectSize)].objectT != objectNull)

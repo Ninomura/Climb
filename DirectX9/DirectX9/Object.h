@@ -33,6 +33,7 @@ public:
 		objectNull,     //空
 		standard, //壊せるスタンダードなオブジェクト
 		fixed,    //固定オブジェクト
+		goal,
 	};
 
 	//敵種類
@@ -69,7 +70,7 @@ Object::Object()
 
 Object::~Object()
 {
-	mapData.~vector();
+	vector< vector<mapType> >().swap(mapData);
 }
 
 //マップ生成
@@ -121,6 +122,9 @@ void Object::MapCreate()
 				break;
 			case 5:
 				mapData[y][x].enemyT = drei;
+				break;
+			case 6:
+				mapData[y][x].objectT = goal;
 				break;
 			}
 		}
