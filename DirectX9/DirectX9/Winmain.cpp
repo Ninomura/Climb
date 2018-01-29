@@ -13,6 +13,7 @@
 #include"ExternGV.h"
 #include"Player.h"
 #include"Enemy.h"
+#include"Animation.h"
 
 #include <random>
 
@@ -239,7 +240,9 @@ int _stdcall WinMain
 	Enemy enemy;
 	Object object;
 
-	int frame = 0;
+	bool modeFlag = false;
+
+	Sprite spriteImgTitleAni[34];
 
 	//背景画像
 	Sprite spriteImgBg;
@@ -263,22 +266,19 @@ int _stdcall WinMain
 	}
 
 	//テクスチャ設定
+	Texture imgTitle;
+	imgTitle.Load(_T("Texture/cl_title.png"));
+	Texture imgTitleAni;
+	Animation titleAni;
 	Texture imgBg;
 	imgBg.Load(_T("Texture/cl_Bg.png"));
-	Texture imgPlayer;
-	imgPlayer.Load(_T("Texture/cl_Player.png"));
-	imgPlayer.SetDivide(4, 1);
-	imgPlayer.SetNum(2, 0);
-	Texture imgEnemy_eins;
-	imgEnemy_eins.Load(_T("Texture/cl_enemy_eins.png"));
-	Texture imgEnemy_zwei;
-	imgEnemy_zwei.Load(_T("Texture/cl_enemy_zwei.png"));
 	Texture imgObject;
-	imgObject.Load(_T("Texture/cl_BaseBlock.png"));
-	imgObject.SetDivide(2, 1);
+	Texture imgPlayer;
+	Texture imgEnemy_eins;
+	Texture imgEnemy_zwei;
 
 	//初期を演算処理に設定
-	Game_Mode Mode = GameStartProcessing;
+	Game_Mode Mode = StartScreenProcessing;
 
 	MSG msg = {};
 
@@ -302,13 +302,41 @@ int _stdcall WinMain
 
 			switch (Mode)
 			{
-			//スタート画面
+				//スタート画面
 			case Game_Mode::StartScreenProcessing:
 
+				if (modeFlag == false)
+				{
+					imgTitleAni.Load(_T("Texture/cl_titleAni.png"));
+					imgTitleAni.SetDivide(10, 1);
+					modeFlag = true;
+				}
+
+				if (pDi->MouseButtonJustPressed(0))
+				{
+					Mode = GameStartProcessing;
+					imgTitleAni.Release();
+					modeFlag = false;
+				}
 				break;
 
 			//初期処理
 			case Game_Mode::GameStartProcessing:
+
+				if (modeFlag == false)
+				{
+					imgObject.Load(_T("Texture/cl_BaseBlock.png"));
+					imgObject.SetDivide(2, 1);
+
+					imgPlayer.Load(_T("Texture/cl_Player.png"));
+					imgPlayer.SetDivide(4, 1);
+					imgPlayer.SetNum(2, 0);
+
+					imgEnemy_eins.Load(_T("Texture/cl_enemy_eins.png"));
+					imgEnemy_zwei.Load(_T("Texture/cl_enemy_zwei.png"));
+
+					modeFlag = true;
+				}
 
 				player.~Player();
 
@@ -349,60 +377,72 @@ int _stdcall WinMain
 			if (SUCCEEDED(d3d.BeginScene()))
 			{
 				d3d.ClearScreen();
+
 				//背景
 				spriteImgBg.Draw(imgBg);
-				//プレイヤー
-				spriteImgPlayer.SetPos
-				(player.getPosX() + player.getSizeX() / 2.0f,
-					player.getPosY() + player.getSizeY() / 2.0f);
-				spriteImgPlayer.Draw(imgPlayer);
-
-				//敵
-				for (int num = 0; num < enemy.getEnemyNum(); num++)
+				switch (Mode)
 				{
-					spriteImgEnemy[num].SetPos(enemy.enemyData[num].posX + enemy.enemyData[num].sizeX / 2.0f,
-						enemy.enemyData[num].posY + enemy.enemyData[num].sizeY / 2.0f);
+				case StartScreenProcessing:
+					titleAni.processing(7, 10);
+					imgTitleAni.SetNum(titleAni.getNum(), 0);
+					spriteImgBg.Draw(imgTitleAni);
+					spriteImgBg.Draw(imgTitle);
+					break;
+				case PlayerProcessing:
+					//プレイヤー
+					spriteImgPlayer.SetPos
+					(player.getPosX() + player.getSizeX() / 2.0f,
+						player.getPosY() + player.getSizeY() / 2.0f);
+					spriteImgPlayer.Draw(imgPlayer);
 
-					if (enemy.enemyData[num].hp > 0)
+					//敵
+					for (int num = 0; num < enemy.getEnemyNum(); num++)
 					{
-						switch (enemy.enemyData[num].type)
+						spriteImgEnemy[num].SetPos(enemy.enemyData[num].posX + enemy.enemyData[num].sizeX / 2.0f,
+							enemy.enemyData[num].posY + enemy.enemyData[num].sizeY / 2.0f);
+
+						if (enemy.enemyData[num].hp > 0)
 						{
-						case enemy.eins:
-							spriteImgEnemy[num].Draw(imgEnemy_eins);
-							break;
-						case enemy.zwei:
-							spriteImgEnemy[num].Draw(imgEnemy_zwei);
-							break;
-						case enemy.drei:
-							break;
-						}
+							switch (enemy.enemyData[num].type)
+							{
+							case enemy.eins:
+								spriteImgEnemy[num].Draw(imgEnemy_eins);
+								break;
+							case enemy.zwei:
+								spriteImgEnemy[num].Draw(imgEnemy_zwei);
+								break;
+							case enemy.drei:
+								break;
+							}
 
-					}
-				}
-
-				//マップ
-				for (int y = 0; y < object.setMaxPosY; y++)
-				{
-					for (int x = 0; x < object.setMaxPosX; x++)
-					{
-						spriteImgObject[y][x].SetPos
-						(x*object.objectSize + object.objectSize / 2,
-							y*object.objectSize + object.objectSize / 2);
-
-						switch (object.mapData[y + object.setPosY][x].objectT)
-						{
-						case object.objectNull:
-							break;
-						case object.standard:
-							imgObject.SetNum(0, 0);
-							spriteImgObject[y][x].Draw(imgObject);
-							break;
-						case object.fixed:
-							imgObject.SetNum(1, 0);
-							spriteImgObject[y][x].Draw(imgObject);
-							break;
 						}
 					}
+
+					//マップ
+					for (int y = 0; y < object.setMaxPosY; y++)
+					{
+						for (int x = 0; x < object.setMaxPosX; x++)
+						{
+							spriteImgObject[y][x].SetPos
+							(x*object.objectSize + object.objectSize / 2,
+								y*object.objectSize + object.objectSize / 2);
+
+							switch (object.mapData[y + object.setPosY][x].objectT)
+							{
+							case object.objectNull:
+								break;
+							case object.standard:
+								imgObject.SetNum(0, 0);
+								spriteImgObject[y][x].Draw(imgObject);
+								break;
+							case object.fixed:
+								imgObject.SetNum(1, 0);
+								spriteImgObject[y][x].Draw(imgObject);
+								break;
+							}
+						}
+					}
+					break;
 				}
 
 				//描画終了の合図

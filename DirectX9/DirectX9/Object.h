@@ -5,6 +5,7 @@
 #include<vector>
 using namespace std;
 
+//マップの統括クラス
 class Object
 {
 private:
@@ -124,11 +125,11 @@ void Object::MapCreate()
 			}
 		}
 	}
-
+	//起点計算
 	setPosX = mapSizeX - setMaxPosX;
 	setPosY = mapSizeY - setMaxPosY;
 
-	//ファイルのクローズ
+	//ファイルクローズ
 	createMapData.close();
 }
 

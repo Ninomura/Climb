@@ -89,23 +89,23 @@ void Player::PlayerMove(DirectInput *pDi, Texture *imgPlayer, Object *pObject, E
 		|| (pDi->KeyJustPressed(DIK_SPACE)))
 		&& gravityFlag == false)
 	{
-		gravityFlag = true;
+		gravityFlag = !gravityFlag;
 		jumpNowSpeed = jumpStartSpeed;
 	}
 
-	//左マウスクリック時
-	if (pDi->MouseButtonJustPressed(0)
-		&& gravityFlag == false)
-	{
-		BlockBreakDown(pObject);
-	}
-	//右クリック時
-	else if (pDi->MouseButtonJustPressed(1)
-		&& gravityFlag == false
-		&& haveBlock > 0)
-	{
-		BlockCreate(pObject);
-	}
+	////左マウスクリック時
+	//if (pDi->MouseButtonJustPressed(0)
+	//	&& gravityFlag == false)
+	//{
+	//	BlockBreakDown(pObject);
+	//}
+	////右クリック時
+	//else if (pDi->MouseButtonJustPressed(1)
+	//	&& gravityFlag == false
+	//	&& haveBlock > 0)
+	//{
+	//	BlockCreate(pObject);
+	//}
 
 	FallingProcessing(pObject, pEnemy);
 }
@@ -113,15 +113,15 @@ void Player::PlayerMove(DirectInput *pDi, Texture *imgPlayer, Object *pObject, E
 //ブロック作成
 void Player::BlockCreate(Object *pObject)
 {
-	if (pObject->mapData[(int)((y + sizeY/2.0f) / objectSize)][(int)((x + sizeX / 2.0f - movingDistance) / objectSize)].objectT == objectNull
-		&&pObject->mapData[(int)((y + sizeY / 2.0f) / objectSize)+1][(int)((x + sizeX / 2.0f - movingDistance) / objectSize)].objectT != objectNull)
-	{
-		pObject->mapData[(int)((y + sizeY / 2.0f) / objectSize)][(int)((x + sizeX / 2.0f - movingDistance) / objectSize)].objectT = standard;
-		y = posY + (pObject->setPosY*objectSize);
-		y = (float)((int)((y + sizeY / 2.0f) / objectSize)*objectSize - sizeY);
-		posY = y - (pObject->setPosY*objectSize);
-		haveBlock--;
-	}
+	//if (pObject->mapData[(int)((y + sizeY/2.0f) / objectSize)][(int)((x + sizeX / 2.0f - movingDistance) / objectSize)].objectT == objectNull
+	//	&&pObject->mapData[(int)((y + sizeY / 2.0f) / objectSize)+1][(int)((x + sizeX / 2.0f - movingDistance) / objectSize)].objectT != objectNull)
+	//{
+	//	pObject->mapData[(int)((y + sizeY / 2.0f) / objectSize)][(int)((x + sizeX / 2.0f - movingDistance) / objectSize)].objectT = standard;
+	//	y = posY + (pObject->setPosY*objectSize);
+	//	y = (float)((int)((y + sizeY / 2.0f) / objectSize)*objectSize - sizeY);
+	//	posY = y - (pObject->setPosY*objectSize);
+	//	haveBlock--;
+	//}
 }
 
 //ブロック破壊
@@ -135,7 +135,7 @@ void Player::BlockBreakDown(Object *pObject)
 }
 
 //当たり判定（重力処理）
-void Player::FallingProcessing(Object *pObject,Enemy *pEnemy)
+void Player::FallingProcessing(Object *pObject, Enemy *pEnemy)
 {
 	y = posY + (pObject->setPosY*objectSize);
 
@@ -164,7 +164,7 @@ void Player::FallingProcessing(Object *pObject,Enemy *pEnemy)
 		{
 			y = (float)((int)((y + sizeY) / objectSize)*objectSize - sizeY);
 			//フラグリセット
-			gravityFlag = false;
+			gravityFlag = !gravityFlag;
 			jumpNowSpeed = 0.0f;
 		}
 
@@ -178,14 +178,14 @@ void Player::FallingProcessing(Object *pObject,Enemy *pEnemy)
 			jumpNowSpeed = 0.0f;
 		}
 		//体(右)で判定
-		if (pObject->mapData[(int)(y / objectSize)][(int)((x + sizeX + movingDistance) / objectSize)].objectT != objectNull
-			|| pObject->mapData[(int)((y + sizeY - 1.0f) / objectSize)][(int)((x + sizeX + movingDistance) / objectSize)].objectT != objectNull)
+		if (pObject->mapData[(int)(y / objectSize)][(int)((x + sizeX) / objectSize)].objectT != objectNull
+			|| pObject->mapData[(int)((y + sizeY - 1.0f) / objectSize)][(int)((x + sizeX) / objectSize)].objectT != objectNull)
 		{
 			x = (float)((int)((x + sizeX + movingDistance) / objectSize)*objectSize - sizeX - 0.1f);
 		}
 		//体(左)で判定
-		else if (pObject->mapData[(int)(y / objectSize)][(int)((x - movingDistance) / objectSize)].objectT != objectNull
-			|| pObject->mapData[(int)((y + sizeY - 1.0f) / objectSize)][(int)((x - movingDistance) / objectSize)].objectT != objectNull)
+		else if (pObject->mapData[(int)(y / objectSize)][(int)((x) / objectSize)].objectT != objectNull
+			|| pObject->mapData[(int)((y + sizeY - 1.0f) / objectSize)][(int)((x) / objectSize)].objectT != objectNull)
 		{
 			x = (float)((int)(((x - movingDistance) / objectSize) + 1.0f)*objectSize);
 		}
@@ -196,8 +196,8 @@ void Player::FallingProcessing(Object *pObject,Enemy *pEnemy)
 			//足元と体で判定
 			if (((y + sizeY >= pEnemy->enemyData[num].y
 				&&y + sizeY <= pEnemy->enemyData[num].y + pEnemy->enemyData[num].sizeY)
-				&& (x + movingDistance+ pEnemy->movingDistance <= pEnemy->enemyData[num].x + pEnemy->enemyData[num].sizeX
-					&& x + sizeX - movingDistance- pEnemy->movingDistance >= pEnemy->enemyData[num].x))
+				&& (x + movingDistance < pEnemy->enemyData[num].x + pEnemy->enemyData[num].sizeX
+					&& x + sizeX - movingDistance> pEnemy->enemyData[num].x))
 				&& jumpNowSpeed >= 0.0f
 				)
 			{
@@ -213,91 +213,75 @@ void Player::FallingProcessing(Object *pObject,Enemy *pEnemy)
 				}
 
 				//フラグリセット
-				gravityFlag = false;
+				gravityFlag = !gravityFlag;
 				jumpNowSpeed = 0.0f;
 			}
 
-			for (float nowY = pEnemy->enemyData[num].y; nowY < pEnemy->enemyData[num].y + pEnemy->enemyData[num].sizeY; nowY += 0.1)
+			//体(右)で判定
+			if ((x + sizeX >= pEnemy->enemyData[num].x
+				&&x + sizeX <= pEnemy->enemyData[num].x + pEnemy->enemyData[num].sizeX / 2.0f)
+				&& ((y > pEnemy->enemyData[num].y && y <= pEnemy->enemyData[num].y + pEnemy->enemyData[num].sizeY)
+					|| (y + sizeY > pEnemy->enemyData[num].y&& y + sizeY <= pEnemy->enemyData[num].y + pEnemy->enemyData[num].sizeY)))
 			{
+				x = (float)(pEnemy->enemyData[num].x - sizeX - pEnemy->movingDistance);
+
+				//敵と壁に挟まれた時
+				if (pObject->mapData[(int)(y / objectSize)][(int)((x) / objectSize)].objectT != objectNull
+					|| pObject->mapData[(int)((y + sizeY - 1.0f) / objectSize)][(int)((x) / objectSize)].objectT != objectNull)
+				{
+					x = (float)((int)(((x - movingDistance) / objectSize) + 1.0f)*objectSize);
+					pEnemy->enemyData[num].returnFlag = !pEnemy->enemyData[num].returnFlag;
+				}
+				//敵と敵に挟まれた時
+				for (int num2 = 0; num2 < pEnemy->getEnemyNum(); num2++)
+				{
+					if (num != num2)
+					{
+						if ((x <= pEnemy->enemyData[num2].x + pEnemy->enemyData[num2].sizeX
+							&&x >= pEnemy->enemyData[num2].x + pEnemy->enemyData[num2].sizeX / 2.0f)
+							&& ((y > pEnemy->enemyData[num2].y&& y <= pEnemy->enemyData[num2].y + pEnemy->enemyData[num2].sizeY)
+								|| (y + sizeY > pEnemy->enemyData[num2].y&& y + sizeY <= pEnemy->enemyData[num2].y + pEnemy->enemyData[num2].sizeY)))
+						{
+							pEnemy->enemyData[num].returnFlag = !pEnemy->enemyData[num].returnFlag;
+							pEnemy->enemyData[num2].returnFlag = !pEnemy->enemyData[num2].returnFlag;
+							break;
+						}
+					}
+				}
+				break;
+			}
+			//体(左)で判定
+			else if ((x <= pEnemy->enemyData[num].x + pEnemy->enemyData[num].sizeX
+				&&x >= pEnemy->enemyData[num].x + pEnemy->enemyData[num].sizeX / 2.0f)
+				&& ((y > pEnemy->enemyData[num].y&& y <= pEnemy->enemyData[num].y + pEnemy->enemyData[num].sizeY)
+					|| (y + sizeY > pEnemy->enemyData[num].y&& y + sizeY <= pEnemy->enemyData[num].y + pEnemy->enemyData[num].sizeY)))
+			{
+				x = (float)(pEnemy->enemyData[num].x + pEnemy->enemyData[num].sizeX + pEnemy->movingDistance);
+
 				//体(右)で判定
-				if ((x + sizeX + pEnemy->movingDistance >= pEnemy->enemyData[num].x
-					&&x + sizeX + pEnemy->movingDistance <= pEnemy->enemyData[num].x+ pEnemy->enemyData[num].sizeX/2.0f)
-					&& ((y > nowY&& y <= pEnemy->enemyData[num].y + pEnemy->enemyData[num].sizeY)
-						||(y + sizeY > nowY&& y + sizeY <= pEnemy->enemyData[num].y + pEnemy->enemyData[num].sizeY)))
+				if (pObject->mapData[(int)(y / objectSize)][(int)((x + sizeX) / objectSize)].objectT != objectNull
+					|| pObject->mapData[(int)((y + sizeY - 1.0f) / objectSize)][(int)((x + sizeX) / objectSize)].objectT != objectNull)
 				{
-					x = (float)(pEnemy->enemyData[num].x - sizeX- pEnemy->movingDistance);
+					x = (float)((int)((x + sizeX + movingDistance) / objectSize)*objectSize - sizeX - 0.1f);
+					pEnemy->enemyData[num].returnFlag = !pEnemy->enemyData[num].returnFlag;
+				}
 
-					//体(左)で判定
-					if (pObject->mapData[(int)(y / objectSize)][(int)((x - movingDistance) / objectSize)].objectT != objectNull
-						|| pObject->mapData[(int)((y + sizeY - 1.0f) / objectSize)][(int)((x - movingDistance) / objectSize)].objectT != objectNull)
+				for (int num2 = 0; num2 < pEnemy->getEnemyNum(); num2++)
+				{
+					if (num != num2)
 					{
-						x = (float)((int)(((x - movingDistance) / objectSize) + 1.0f)*objectSize);
-						pEnemy->enemyData[num].returnFlag = false;
-					}
-
-					for (int num2 = 0; num2 < pEnemy->getEnemyNum(); num2++)
-					{
-						if (num != num2)
+						if ((x + sizeX >= pEnemy->enemyData[num2].x
+							&&x + sizeX <= pEnemy->enemyData[num2].x + pEnemy->enemyData[num2].sizeX / 2.0f)
+							&& ((y > pEnemy->enemyData[num2].y&& y <= pEnemy->enemyData[num2].y + pEnemy->enemyData[num2].sizeY)
+								|| (y + sizeY > pEnemy->enemyData[num2].y&& y + sizeY <= pEnemy->enemyData[num2].y + pEnemy->enemyData[num2].sizeY)))
 						{
-							for (float nowY = pEnemy->enemyData[num2].y; nowY < pEnemy->enemyData[num2].y + pEnemy->enemyData[num2].sizeY; nowY += 20.0f)
-							{
-								if ((x - pEnemy->movingDistance <= pEnemy->enemyData[num2].x + pEnemy->enemyData[num2].sizeX
-									&&x - pEnemy->movingDistance >= pEnemy->enemyData[num2].x + pEnemy->enemyData[num2].sizeX / 2.0f)
-									&& ((y > nowY&& y <= pEnemy->enemyData[num2].y + pEnemy->enemyData[num2].sizeY) 
-										|| (y + sizeY > nowY&& y + sizeY <= pEnemy->enemyData[num2].y + pEnemy->enemyData[num2].sizeY)))
-								{
-									x = (float)(pEnemy->enemyData[num2].x + pEnemy->enemyData[num2].sizeX + pEnemy->movingDistance);
-									pEnemy->enemyData[num].x += pEnemy->movingDistance;
-									pEnemy->enemyData[num2].x -= pEnemy->movingDistance;
-									pEnemy->enemyData[num].returnFlag = false;
-									pEnemy->enemyData[num2].returnFlag = true;
-									break;
-								}
-							}
+							pEnemy->enemyData[num].returnFlag = !pEnemy->enemyData[num].returnFlag;
+							pEnemy->enemyData[num2].returnFlag = !pEnemy->enemyData[num2].returnFlag;
+							break;
 						}
 					}
-					break;
 				}
-				//体(左)で判定
-				else if ((x - pEnemy->movingDistance <= pEnemy->enemyData[num].x + pEnemy->enemyData[num].sizeX
-					&&x - pEnemy->movingDistance >= pEnemy->enemyData[num].x + pEnemy->enemyData[num].sizeX / 2.0f)
-					&& ((y > nowY&& y <= pEnemy->enemyData[num].y + pEnemy->enemyData[num].sizeY)
-						|| (y + sizeY > nowY&& y + sizeY <= pEnemy->enemyData[num].y + pEnemy->enemyData[num].sizeY)))
-				{
-					x = (float)(pEnemy->enemyData[num].x + pEnemy->enemyData[num].sizeX+ pEnemy->movingDistance);
-
-					//体(右)で判定
-					if (pObject->mapData[(int)(y / objectSize)][(int)((x + sizeX + movingDistance) / objectSize)].objectT != objectNull
-						|| pObject->mapData[(int)((y + sizeY - 1.0f) / objectSize)][(int)((x + sizeX + movingDistance) / objectSize)].objectT != objectNull)
-					{
-						x = (float)((int)((x + sizeX + movingDistance) / objectSize)*objectSize - sizeX - 0.1f);
-						pEnemy->enemyData[num].returnFlag = true;
-					}
-
-					for (int num2 = 0; num2 < pEnemy->getEnemyNum(); num2++)
-					{
-						if (num != num2)
-						{
-							for (float nowY = pEnemy->enemyData[num2].y; nowY < pEnemy->enemyData[num2].y + pEnemy->enemyData[num2].sizeY; nowY += 20.0f)
-							{
-								if ((x + sizeX + pEnemy->movingDistance >= pEnemy->enemyData[num2].x
-									&&x + sizeX + pEnemy->movingDistance <= pEnemy->enemyData[num2].x + pEnemy->enemyData[num2].sizeX / 2.0f)
-									&& ((y > nowY&& y <= pEnemy->enemyData[num2].y + pEnemy->enemyData[num2].sizeY) 
-										|| (y + sizeY > nowY&& y + sizeY <= pEnemy->enemyData[num2].y + pEnemy->enemyData[num2].sizeY)))
-								{
-									x = (float)(pEnemy->enemyData[num2].x - sizeX - pEnemy->movingDistance);
-									pEnemy->enemyData[num].x -= pEnemy->movingDistance;
-									pEnemy->enemyData[num2].x += pEnemy->movingDistance;
-									pEnemy->enemyData[num].returnFlag = true;
-									pEnemy->enemyData[num2].returnFlag = false;
-									break;
-								}
-
-							}
-						}
-					}
-					break;
-				}
+				break;
 			}
 		}
 
