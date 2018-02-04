@@ -91,7 +91,8 @@ void Player::PlayerMove(DirectInput *pDi, Texture *imgPlayer, Object *pObject, E
 
 	//ƒWƒƒƒ“ƒv
 	if ((pDi->KeyJustPressed(DIK_W)
-		|| (pDi->KeyJustPressed(DIK_UP)))
+		|| pDi->KeyJustPressed(DIK_UP)
+			|| pDi->KeyJustPressed(DIK_SPACE))
 		&& gravityFlag == false)
 	{
 		gravityFlag = !gravityFlag;

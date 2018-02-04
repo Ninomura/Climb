@@ -77,7 +77,7 @@ Object::~Object()
 void Object::MapCreate()
 {
 	//ファイル取得
-	ifstream createMapData("MapData/01.txt");
+	ifstream createMapData("cl_data/MapData/01.txt");
 	//読み込み確認
 	if (!createMapData)
 	{}

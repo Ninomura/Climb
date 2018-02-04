@@ -4,11 +4,17 @@
 
 #include <tchar.h>
 
+
 #include"Direct3D.h"
 
 #include "Sprite.h"
 #include "Texture.h"
+
 #include "DirectInput.h"
+
+#include"DirectSound.h"
+#include"Wave.h"
+#include"SoundBuffer.h"
 
 #include"ExternGV.h"
 #include"Player.h"
@@ -26,14 +32,50 @@ LRESULT CALLBACK WndPrc
 	LPARAM lParam
 )
 {
+	//メッセージ処理のための関数
+	//DispatchMessageによって呼び出される
+
+	//ウィンドウクラスの登録時に
+	//各ウィンドウに設定される
+
+	//アプリケーションがメッセージを
+	//取得したら呼び出される
+
+	//メッセージの例
+
+	//WM_DESTROY ウィンドウが破棄された
+	//			 ×ボタンが押された時など
+	//WM_MOVE    ウィンドウが移動
+	//WM_SIZE    ウィンドウサイズの変更
+	//等
+
+	//特別な処理を必要とする場合
+	//または自分で独自の処理を定義したい場合
+	//ここでメッセージの種類に応じた
+	//処理を行う
+
+	//取りあえず WM_DESTROYが来た時の
+	//終了処理のみ定義
+
 	switch (msg)
 	{
 	case WM_DESTROY:
 
 		PostQuitMessage(0);
 
+		//メッセージキューに
+		//新しくWM_QUITメッセージを送る
+
+		//いずれメッセージキューから
+		//取り出され
+		//メインループが終了する
+		//(メインループの終了条件を
+		//そのように作る)
 		break;
 	}
+
+	//独自の処理を行ったら
+	//デフォルトのウィンドウプロシージャを実行
 
 	return DefWindowProc(hWnd, msg, wParam, lParam);
 }
@@ -69,6 +111,10 @@ HRESULT RegistClassEx(HINSTANCE hInstance)
 	//それぞれがビット単位のフラグであるため
 	//オア演算で合成したものがスタイルの最終的な設定
 	wcex.style = CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS;
+
+	//CS_HREDRAW 横サイズが変わったときウィンドウ全体の再描画
+	//   VREDRAW 縦サイズが変わったときウィンドウ全体の再描画
+	//   DBLCLKS ダブルクリックが発生したことをウィンドウに通知
 
 	//WinMainのインスタンスハンドル
 	wcex.hInstance = hInstance;
@@ -110,7 +156,6 @@ HRESULT RegistClassEx(HINSTANCE hInstance)
 	return RegisterClassEx(&wcex);
 	//HRESULT型の実行結果が戻される
 }
-
 
 //登録した設定を基にウィンドウを作成する
 HRESULT MakeWindow
@@ -155,8 +200,15 @@ HRESULT MakeWindow
 		NULL,					//メニューのハンドル
 		hInstance,				//WinMainのハンドル
 
-		NULL);
+		NULL);					//ウィンドウ作成データ
+								//ウィンドウに好きな32ビットのデータを
+								//付属させることができる
+								//追加情報構造体へのポインタなど
+								//を付けるのが無難な使い方か
+								//今回は使わない
 
+								//ウィンドウが正しく作れたかをチェック
+								//正しく作れたらhWndにNULL以外が入るはず
 	if (hWnd == NULL)
 	{
 		return S_FALSE;//HRESULT型　失敗を表す識別子の一つ
@@ -190,12 +242,6 @@ int _stdcall WinMain
 	LPSTR lpCmdLine,		//コマンドライン引数
 	int nCmdShow)		//ウィンドウの表示状態
 {
-	//メッセージボックス
-	MessageBox(NULL,		//ウィンドウのハンドル 
-		TEXT("テスト"),		//本文
-		TEXT("テスト-タイトル"),//タイトル
-		MB_OK);				//メッセージボックスのタイプ
-							//MB_OK  okのボタンが表示
 
 	if (FAILED(RegistClassEx(hInstance)))
 	{
@@ -225,60 +271,81 @@ int _stdcall WinMain
 	//Direct3DDeviceの作成を試みる
 	if (d3d.TryCreate(hWnd))
 	{
-		MessageBox(NULL,
-			TEXT("Direct3D Device作成成功"),
-			TEXT("テスト-タイトル"),
-			MB_OK);
+
 	}
 
-	d3d.SetRenderState(RENDERSTATE::RENDER_ALPHATEST);
+	d3d.SetRenderState(RENDERSTATE::RENDER_ALPHABLEND);
 
 	DirectInput * pDi = DirectInput::GetInstance();
 	pDi->Init(hWnd);
 
+	//ダイレクトサウンドのデバイス作成
+	DirectSound* pDs = DirectSound::GetInstance();
+	pDs->Create(hWnd);
+
 	Player player;
 	Enemy enemy;
 	Object object;
+
 	Animation titleAni;
 
-	bool modeFlag = false;
-
-	Sprite spriteImgTitleAni[34];
-
-	//背景画像
+	//スプライト
+	//背景
 	Sprite spriteImgBg;
 	spriteImgBg.SetSize(WindowWidthSize, WindowHeightSize);
 	spriteImgBg.SetPos(WindowWidthSize / 2, WindowHeightSize / 2);
+	//タイトルロゴ
 	Sprite spriteImgTitleRogo;
-	spriteImgTitleRogo.SetSize(800, 256);
-	spriteImgTitleRogo.SetPos(WindowWidthSize / 2, WindowHeightSize / 3);
-	//Player画像
+	spriteImgTitleRogo.SetSize(900, 528);
+	spriteImgTitleRogo.SetPos(WindowWidthSize / 2, WindowHeightSize / 2);
+	//オブジェクト
+	Sprite spriteImgObject;
+	spriteImgObject.SetSize(object.objectSize, object.objectSize);
+	//プレイヤー
 	Sprite spriteImgPlayer;
 	spriteImgPlayer.SetSize(player.getSizeX(), player.getSizeY());
-	//エネミー画像
-	vector<Sprite>spriteImgEnemy;
-
-	//マップ画像
-	Sprite spriteImgObject[object.setMaxPosY][object.setMaxPosX];
-	//データ入力
-	for (int y = 0; y < object.setMaxPosY; y++)
-	{
-		for (int x = 0; x < object.setMaxPosX; x++)
-		{
-			spriteImgObject[y][x].SetSize(object.objectSize, object.objectSize);
-		}
-	}
+	//ブロー君
+	Sprite spriteImgEnemy;
 
 	//テクスチャ設定
+	//フレーム
+	Texture imgframe;
+	imgframe.Load(_T("cl_data/Texture/cl_frame.png"));
+	//タイトル
 	Texture imgTitle;
+	imgTitle.Load(_T("cl_data/Texture/cl_title.png"));
 	Texture imgTitleAni;
+	imgTitleAni.Load(_T("cl_data/Texture/cl_titleAni.png"));
+	imgTitleAni.SetDivide(10, 0);
+	//クリア
 	Texture imgClear;
+	imgClear.Load(_T("cl_data/Texture/cl_clear.png"));
+	//背景
 	Texture imgBg;
+	imgBg.Load(_T("cl_data/Texture/cl_Bg.png"));
+	//オブジェクト
 	Texture imgObject;
+	imgObject.Load(_T("cl_data/Texture/cl_BaseBlock.png"));
+	imgObject.SetDivide(4, 1);
+	//プレイヤー
 	Texture imgPlayer;
+	imgPlayer.Load(_T("cl_data/Texture/cl_Player.png"));
+	imgPlayer.SetDivide(4, 1);
+	imgPlayer.SetNum(2, 0);
+	//ブロー君
 	Texture imgEnemy_eins;
+	imgEnemy_eins.Load(_T("cl_data/Texture/cl_enemy_eins.png"));
 	Texture imgEnemy_zwei;
+	imgEnemy_zwei.Load(_T("cl_data/Texture/cl_enemy_zwei.png"));
 	Texture imgEnemy_drei;
+	imgEnemy_drei.Load(_T("cl_data/Texture/cl_enemy_drei.png"));
+
+	//サウンド
+	WaveFile titleWave;
+	titleWave.Load("cl_data/Sound/cl_titleBGM.wav");
+	SoundBuffer titleBGM;
+	titleBGM.Create(titleWave);
+	titleBGM.Play(true);
 
 	//初期を演算処理に設定
 	Game_Mode Mode = StartScreenProcessing;
@@ -307,43 +374,16 @@ int _stdcall WinMain
 				//スタート画面
 			case Game_Mode::StartScreenProcessing:
 
-				if (modeFlag == false)
-				{
-					imgTitle.Load(_T("Texture/cl_title.png"));
-
-					imgTitleAni.Load(_T("Texture/cl_titleAni.png"));
-					imgTitleAni.SetDivide(10, 1);
-					modeFlag = true;
+				if (pDi->KeyJustPressed(DIK_RETURN)) 
+				{ 
+					titleBGM.Stop();
+					Mode = GameStartProcessing; 
 				}
 
-				if (pDi->KeyJustPressed(DIK_RETURN))
-				{
-					Mode = GameStartProcessing;
-					imgTitle.Release();
-					imgTitleAni.Release();
-					modeFlag = false;
-				}
 				break;
 
 			//初期処理
 			case Game_Mode::GameStartProcessing:
-
-				if (modeFlag == false)
-				{
-					imgBg.Load(_T("Texture/cl_Bg.png"));
-					imgObject.Load(_T("Texture/cl_BaseBlock.png"));
-					imgObject.SetDivide(2, 1);
-
-					imgPlayer.Load(_T("Texture/cl_Player.png"));
-					imgPlayer.SetDivide(4, 1);
-					imgPlayer.SetNum(2, 0);
-
-					imgEnemy_eins.Load(_T("Texture/cl_enemy_eins.png"));
-					imgEnemy_zwei.Load(_T("Texture/cl_enemy_zwei.png"));
-					imgEnemy_drei.Load(_T("Texture/cl_enemy_drei.png"));
-
-					modeFlag = true;
-				}
 
 				player.~Player();
 
@@ -351,18 +391,26 @@ int _stdcall WinMain
 				player.PlayerCreate();
 				enemy.CreateEnemy(&object);
 
-				spriteImgEnemy.resize(enemy.getEnemyNum());
-				for (int num = 0; num < enemy.getEnemyNum(); num++)
-				{
-					spriteImgEnemy[num].SetSize(enemy.enemyData[num].sizeX, enemy.enemyData[num].sizeY);
-				}
-
 				//プレイヤー操作に移動
 				Mode = PlayerProcessing;
 				break;
 
 			//プレイヤー操作
 			case Game_Mode::PlayerProcessing:
+
+				//強制終了
+				if (pDi->KeyJustPressed(DIK_F1))
+				{
+
+					enemy.~Enemy();
+					object.~Object();
+					player.~Player();
+
+					titleBGM.Play(true);
+					Mode = StartScreenProcessing;
+
+					break;
+				}
 
 				enemy.MoveEnemy(&object);
 				//移動処理
@@ -372,24 +420,13 @@ int _stdcall WinMain
 
 				if (player.getGoalFlag() == true)
 				{
-					imgClear.Load(_T("Texture/cl_clear.png"));
-					imgBg.Release();
-					imgObject.Release();
-
-					imgPlayer.Release();
-
-					imgEnemy_eins.Release();
-					imgEnemy_zwei.Release();
-					imgEnemy_drei.Release();
-
-					vector<Sprite>().swap(spriteImgEnemy);
-
 					enemy.~Enemy();
 					object.~Object();
 					player.~Player();
-					modeFlag = false;
+
 					Mode = GameEndProcessing;
 				}
+
 				break;
 
 			//ゲーム終了
@@ -397,7 +434,7 @@ int _stdcall WinMain
 
 				if (pDi->KeyJustPressed(DIK_RETURN)) 
 				{
-					imgClear.Release();
+					titleBGM.Play(true);
 					Mode = StartScreenProcessing;
 				}
 
@@ -405,13 +442,14 @@ int _stdcall WinMain
 			}
 
 			//描画処理
-			//バックバッファのクリア
 			if (SUCCEEDED(d3d.BeginScene()))
 			{
 				d3d.ClearScreen();
+
 				switch (Mode)
 				{
 				case StartScreenProcessing:
+					//タイトル
 					titleAni.processing(10, 10);
 					imgTitleAni.SetNum(titleAni.getNum(), 0);
 					spriteImgBg.Draw(imgTitleAni);
@@ -429,7 +467,8 @@ int _stdcall WinMain
 					//敵
 					for (int num = 0; num < enemy.getEnemyNum(); num++)
 					{
-						spriteImgEnemy[num].SetPos(enemy.enemyData[num].posX + enemy.enemyData[num].sizeX / 2.0f,
+						spriteImgEnemy.SetSize(enemy.enemyData[num].sizeX, enemy.enemyData[num].sizeY);
+						spriteImgEnemy.SetPos(enemy.enemyData[num].posX + enemy.enemyData[num].sizeX / 2.0f,
 							enemy.enemyData[num].posY + enemy.enemyData[num].sizeY / 2.0f);
 
 						if (enemy.enemyData[num].hp > 0)
@@ -437,13 +476,13 @@ int _stdcall WinMain
 							switch (enemy.enemyData[num].type)
 							{
 							case enemy.eins:
-								spriteImgEnemy[num].Draw(imgEnemy_eins);
+								spriteImgEnemy.Draw(imgEnemy_eins);
 								break;
 							case enemy.zwei:
-								spriteImgEnemy[num].Draw(imgEnemy_zwei);
+								spriteImgEnemy.Draw(imgEnemy_zwei);
 								break;
 							case enemy.drei:
-								spriteImgEnemy[num].Draw(imgEnemy_drei);
+								spriteImgEnemy.Draw(imgEnemy_drei);
 								break;
 							}
 
@@ -455,7 +494,7 @@ int _stdcall WinMain
 					{
 						for (int x = 0; x < object.setMaxPosX; x++)
 						{
-							spriteImgObject[y][x].SetPos
+							spriteImgObject.SetPos
 							(x*object.objectSize + object.objectSize / 2,
 								y*object.objectSize + object.objectSize / 2);
 
@@ -465,11 +504,15 @@ int _stdcall WinMain
 								break;
 							case object.standard:
 								imgObject.SetNum(0, 0);
-								spriteImgObject[y][x].Draw(imgObject);
+								spriteImgObject.Draw(imgObject);
 								break;
 							case object.fixed:
 								imgObject.SetNum(1, 0);
-								spriteImgObject[y][x].Draw(imgObject);
+								spriteImgObject.Draw(imgObject);
+								break;
+							case object.goal:
+								imgObject.SetNum(2, 0);
+								spriteImgObject.Draw(imgObject);
 								break;
 							}
 						}
@@ -479,8 +522,9 @@ int _stdcall WinMain
 					spriteImgBg.Draw(imgClear);
 					break;
 				}
+				//フレーム
+				spriteImgBg.Draw(imgframe);
 
-				//描画終了の合図
 				d3d.EndScene();
 				//バックバッファをフロントへ反映
 				d3d.Present();
